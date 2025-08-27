@@ -1,0 +1,99 @@
+From 6c9b16df4b89a5271b9ca8595e0ecd3455afcdc7 Mon Sep 17 00:00:00 2001
+From: Martin Liu <liumartin@google.com>
+Date: Thu, 3 Nov 2022 03:51:14 +0000
+Subject: [PATCH 26/35] ANDROID: dma-buf: heaps: replace mutex lock with
+ spinlock
+
+We should use spinlock to protect page pool's critical section as
+1. The critical section is short, using spinlock is more efficient.
+2. Spinlock could protect priority inversion. Ex. Low priority
+   thread (dmabuf-deferred) hold the page lock but get scheduled
+   out under heavy loading. Then the other high priority threads
+   need to wait for dmabuf-deferred to release the lock. It causes
+   long allocation latency and possible UI jank.
+
+Also, we could move NR_KERNEL_MISC_RECLAIMABLE stat out of the
+critical section to make it shorter as mod_node_page_state can
+handle concurrent access cases.
+
+Bug: 245454030
+Change-Id: I15f349f9e893621f71ca79f1de037de184c33edf
+Signed-off-by: Martin Liu <liumartin@google.com>
+---
+ drivers/dma-buf/heaps/page_pool.c | 14 ++++++++------
+ drivers/dma-buf/heaps/page_pool.h |  4 ++--
+ 2 files changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/page_pool.c b/drivers/dma-buf/heaps/page_pool.c
+index 252394fe3367..7a270ea5eab0 100644
+--- a/drivers/dma-buf/heaps/page_pool.c
++++ b/drivers/dma-buf/heaps/page_pool.c
+@@ -41,10 +41,10 @@ static void dmabuf_page_pool_add(struct dmabuf_page_pool *pool, struct page *pag
+ 	else
+ 		index = POOL_LOWPAGE;
+ 
+-	mutex_lock(&pool->mutex);
++	spin_lock(&pool->lock);
+ 	list_add_tail(&page->lru, &pool->items[index]);
+ 	pool->count[index]++;
+-	mutex_unlock(&pool->mutex);
++	spin_unlock(&pool->lock);
+ 	mod_node_page_state(page_pgdat(page), NR_KERNEL_MISC_RECLAIMABLE,
+ 			    1 << pool->order);
+ }
+@@ -53,16 +53,18 @@ static struct page *dmabuf_page_pool_remove(struct dmabuf_page_pool *pool, int i
+ {
+ 	struct page *page;
+ 
+-	mutex_lock(&pool->mutex);
++	spin_lock(&pool->lock);
+ 	page = list_first_entry_or_null(&pool->items[index], struct page, lru);
+ 	if (page) {
+ 		pool->count[index]--;
+ 		list_del(&page->lru);
++		spin_unlock(&pool->lock);
+ 		mod_node_page_state(page_pgdat(page), NR_KERNEL_MISC_RECLAIMABLE,
+ 				    -(1 << pool->order));
++		goto out;
+ 	}
+-	mutex_unlock(&pool->mutex);
+-
++	spin_unlock(&pool->lock);
++out:
+ 	return page;
+ }
+ 
+@@ -125,7 +127,7 @@ struct dmabuf_page_pool *dmabuf_page_pool_create(gfp_t gfp_mask, unsigned int or
+ 	}
+ 	pool->gfp_mask = gfp_mask | __GFP_COMP;
+ 	pool->order = order;
+-	mutex_init(&pool->mutex);
++	spin_lock_init(&pool->lock);
+ 
+ 	mutex_lock(&pool_list_lock);
+ 	list_add(&pool->list, &pool_list);
+diff --git a/drivers/dma-buf/heaps/page_pool.h b/drivers/dma-buf/heaps/page_pool.h
+index 6b083b04f195..bfdb78bd3363 100644
+--- a/drivers/dma-buf/heaps/page_pool.h
++++ b/drivers/dma-buf/heaps/page_pool.h
+@@ -13,7 +13,7 @@
+ #include <linux/device.h>
+ #include <linux/kref.h>
+ #include <linux/mm_types.h>
+-#include <linux/mutex.h>
++#include <linux/spinlock.h>
+ #include <linux/shrinker.h>
+ #include <linux/types.h>
+ 
+@@ -40,7 +40,7 @@ enum {
+ struct dmabuf_page_pool {
+ 	int count[POOL_TYPE_SIZE];
+ 	struct list_head items[POOL_TYPE_SIZE];
+-	struct mutex mutex;
++	struct spinlock lock;
+ 	gfp_t gfp_mask;
+ 	unsigned int order;
+ 	struct list_head list;
+-- 
+2.45.2
+

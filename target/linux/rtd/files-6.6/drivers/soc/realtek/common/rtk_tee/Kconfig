@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Generic Trusted Execution Environment Configuration
+menuconfig REALTEK_TEE
+	tristate "Realtek TEE driver"
+	depends on HAVE_ARM_SMCCC || COMPILE_TEST
+	select CRYPTO
+	select CRYPTO_SHA1
+	select DMA_SHARED_BUFFER
+	select GENERIC_ALLOCATOR
+	default y
+	help
+	  This implements a generic interface towards a Trusted Execution
+	  Environment (TEE).
+
+if REALTEK_TEE
+
+source "drivers/soc/realtek/common/rtk_tee/optee/Kconfig"
+
+endif

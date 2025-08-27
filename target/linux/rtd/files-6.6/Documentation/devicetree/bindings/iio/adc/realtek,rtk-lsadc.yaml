@@ -1,0 +1,143 @@
+# SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/iio/adc/realtek,rtk-lsadc.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Realtek Low-speed Analog to Digital Converter
+
+maintainers:
+  - Eric Wang <ericwang@realtek.com>
+
+description:
+  For RTD12xx, RTD13xx, or RTD16xx,
+  the LSADC has 2 pads with 6-bits resolution for 0 ~ 3.3V.
+  For RTD16xxb, RTD13xxd, RTD1325, RTD1625, or later,
+  the LSADC has 2 pads with 8-bits resolution for 0 ~ 1.8V.
+
+properties:
+  compatible:
+    enum:
+      - realtek,rtd1619b-lsadc0
+      - realtek,rtk-lsadc0
+      - realtek,rtk-lsadc
+
+  reg:
+    description:
+      Offset and length of the LSADC block register set
+    maxItems: 2
+
+  interrupts:
+    maxItems: 1
+
+  clk_gating_en:
+    description:
+      Clock gating for LSADC is used for power saving.
+      0:disable
+      1:enable
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 1
+
+  clocks:
+    description:
+      Clock used for this block
+    maxItems: 1
+
+  resets:
+    description:
+      Phandle to reset this block.
+    maxItems: 1
+
+required:
+  - compatible
+  - reg
+  - interrupts
+  - clk_gating_en
+  - clocks
+  - resets
+
+patternProperties:
+  "^lsadc0-pad[0-1]$":
+    type: object
+    description:
+      Each LSADC pad is configured as a subnode.
+
+    properties:
+      activate:
+        description:
+          0:in-activate
+          1:activate
+        $ref: /schemas/types.yaml#/definitions/uint32
+        minimum: 0
+        maximum: 1
+
+      ctrl_mode:
+        description:
+          0:voltage mode
+          1:current mode
+        $ref: /schemas/types.yaml#/definitions/uint32
+        minimum: 0
+        maximum: 1
+
+      sw_idx:
+        description:
+          0:External input pin 0
+          1:External input pin 1
+        $ref: /schemas/types.yaml#/definitions/uint32
+        minimum: 0
+        maximum: 1
+
+      voltage_threshold:
+        description:
+          voltage threshold to trigger interrupt
+        $ref: /schemas/types.yaml#/definitions/uint32
+        minimum: 0
+        maximum: 255
+
+      adc_val_baseline:
+        description:
+          absolute baseline to reset adc_val
+        $ref: /schemas/types.yaml#/definitions/uint32
+        minimum: 0
+        maximum: 255
+
+    required:
+      - activate
+      - ctrl_mode
+      - sw_idx
+      - voltage_threshold
+      - adc_val_baseline
+
+additionalProperties: true
+
+examples:
+  - |
+    #include <dt-bindings/clock/rtd1319d-clk.h>
+    #include <dt-bindings/reset/rtd1319d-reset.h>
+    lsadc@7900 {
+      compatible = "realtek,rtk-lsadc0";
+      interrupt-parent =  <&iso_irq_mux>;
+      interrupts = <3>;
+      reg = <0x7900 0x200>,
+            <0x34c 0x4>;
+      clk_gating_en = <1>;
+      clocks = <&ic RTD1319D_ISO_CLK_EN_LSADC>;
+      resets = <&ic RTD1319D_ISO_RSTN_LSADC>;
+      lsadc0-pad0 {
+      activate = <1>;
+      ctrl_mode = <0>;
+      sw_idx = <0>;
+      voltage_threshold = <32>;
+      adc_val_baseline = <63>;
+      };
+
+      lsadc0-pad1 {
+      activate = <0>;
+      ctrl_mode = <0>;
+      sw_idx = <1>;
+      voltage_threshold = <63>;
+      adc_val_baseline = <63>;
+      };
+    };
+

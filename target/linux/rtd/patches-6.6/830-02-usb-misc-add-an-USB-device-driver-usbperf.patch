@@ -1,0 +1,50 @@
+From eb30096595652448e35594144336a187eba675d3 Mon Sep 17 00:00:00 2001
+From: Stanley Chang <stanley_chang@realtek.com>
+Date: Thu, 21 Sep 2023 19:34:12 +0800
+Subject: [PATCH] usb: misc: add an USB device driver usbperf for usb
+ performance test
+
+[Information]
+usbperf is a usb device driver, it can be used with usb gadget function
+driver f_usbperf to test the performance of bulk, iso transfer.
+
+Change-Id: Ib44c618cc47be71d2fa51fa1abed786bca9cbb02
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+---
+ drivers/usb/misc/Kconfig  | 9 +++++++++
+ drivers/usb/misc/Makefile | 1 +
+ 2 files changed, 10 insertions(+)
+
+diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+index b7cc40aac3a0..de4b6bcef39e 100644
+--- a/drivers/usb/misc/Kconfig
++++ b/drivers/usb/misc/Kconfig
+@@ -313,6 +313,15 @@ config USB_FTDI_SPI
+ 	 by /dev/ftdi_spi_device_*.
+ 	 Future are support SPI mode function.
+ 
++config USB_TEST_PERFORMANCE
++	tristate "USB performance testing driver"
++	help
++	  This driver is for performance testing host controller software.
++	  It is used with specialized device firmware for performance testing.
++	  This driver developed base on usb testing driver.
++	  See <http://www.linux-usb.org/usbtest/> for more information,
++	  including sample test device firmware and "how to use it".
++
+ config USB_ONBOARD_HUB
+ 	tristate "Onboard USB hub support"
+ 	depends on OF
+diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
+index ed21dd3f1738..0cec33377f14 100644
+--- a/drivers/usb/misc/Makefile
++++ b/drivers/usb/misc/Makefile
+@@ -33,4 +33,5 @@ obj-$(CONFIG_USB_SISUSBVGA)		+= sisusbvga/
+ obj-$(CONFIG_USB_LINK_LAYER_TEST)	+= lvstest.o
+ obj-$(CONFIG_BRCM_USB_PINMAP)		+= brcmstb-usb-pinmap.o
+ obj-$(CONFIG_USB_FTDI_SPI)		+= ftdi-spi.o
++obj-$(CONFIG_USB_TEST_PERFORMANCE)	+= usbperf.o
+ obj-$(CONFIG_USB_ONBOARD_HUB)		+= onboard_usb_hub.o
+-- 
+2.45.2
+

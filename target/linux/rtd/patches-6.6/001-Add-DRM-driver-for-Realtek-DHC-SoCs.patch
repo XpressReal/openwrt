@@ -1,0 +1,37 @@
+From 8cfbff0592081672f384eadbb1eb1ac95a297fc2 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Fri, 2 Dec 2022 14:29:14 +0800
+Subject: [PATCH] gpu: drm: add DRM driver for Realtek DHC SoCs
+
+Change-Id: If894101b2c1f6ae5975bae6060d77cc69dc1ba8c
+---
+ drivers/gpu/drm/Kconfig                   |    2 +
+ drivers/gpu/drm/Makefile                  |    1 +
+ 2 files changed, 12679 insertions(+)
+
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index cea777ae7fb9..4d52cc33c416 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -361,6 +361,8 @@ source "drivers/gpu/drm/tiny/Kconfig"
+ 
+ source "drivers/gpu/drm/pl111/Kconfig"
+ 
++source "drivers/gpu/drm/realtek/Kconfig"
++
+ source "drivers/gpu/drm/tve200/Kconfig"
+ 
+ source "drivers/gpu/drm/xen/Kconfig"
+diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+index ad1112154898..c9e9214f6904 100644
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -107,4 +107,5 @@ obj-y 			+= imx/
+ obj-$(CONFIG_DRM_MESON)	+= meson/
++obj-$(CONFIG_DRM_RTK) += realtek/
+ obj-y			+= i2c/
+ obj-y			+= panel/
+ obj-y			+= bridge/
+-- 
+2.42.0
+

@@ -1,0 +1,38 @@
+From c0f26d1df7b2f8e3f26bbb16c08490d62ff11b43 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 10 Nov 2022 17:28:28 +0800
+Subject: [PATCH] soc: realtek: common: add Realtek chip info driver
+
+Change-Id: Ie8576b79af4256ebaa1004dba16ee6e2d52405c8
+---
+ drivers/soc/Kconfig  | 1 +
+ drivers/soc/Makefile | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
+index d21e75d69294..3d746f14e1d2 100644
+--- a/drivers/soc/Kconfig
++++ b/drivers/soc/Kconfig
+@@ -20,6 +20,7 @@ source "drivers/soc/microchip/Kconfig"
+ source "drivers/soc/nuvoton/Kconfig"
+ source "drivers/soc/pxa/Kconfig"
+ source "drivers/soc/qcom/Kconfig"
++source "drivers/soc/realtek/Kconfig"
+ source "drivers/soc/renesas/Kconfig"
+ source "drivers/soc/rockchip/Kconfig"
+ source "drivers/soc/samsung/Kconfig"
+diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
+index 0706a27d13be..9dd03c407a35 100644
+--- a/drivers/soc/Makefile
++++ b/drivers/soc/Makefile
+@@ -25,6 +25,7 @@ obj-y				+= nuvoton/
+ obj-y				+= pxa/
+ obj-y				+= amlogic/
+ obj-y				+= qcom/
++obj-$(CONFIG_ARCH_REALTEK)	+= realtek/
+ obj-y				+= renesas/
+ obj-y				+= rockchip/
+ obj-$(CONFIG_SOC_SAMSUNG)	+= samsung/
+-- 
+2.45.2
+

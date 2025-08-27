@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2023 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include "rtd1325-milo.dtsi"
+
+/ {
+	compatible = "realtek,milo", "realtek,rtd1325";
+	model = "Realtek Milo EVB (3GB)";
+
+	memory@40000 {
+		device_type = "memory";
+		reg = <0x00040000 0x7ffc0000>,
+		      <0x80024000 0x080dc000>,
+		      <0x8a100000 0x0def0000>,
+		      <0x98700000 0x07900000>,
+		      <0xa0300000 0x1fd00000>;
+	};
+};
+
+&cma_reserved_2 {
+	alloc-ranges=<0x00000000 0x60000000>;
+};

@@ -1,0 +1,43 @@
+From 4798280a63218c66ddda1f908d284840046350b9 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 10 Nov 2022 17:27:47 +0800
+Subject: [PATCH] nvmem: realtek: add Realtek efuse driver
+
+Change-Id: Ieed58241ca286704c32ed73aff9a2579470f85ab
+---
+ drivers/nvmem/Kconfig  | 10 ++++++++++
+ drivers/nvmem/Makefile |  2 ++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/drivers/nvmem/Kconfig b/drivers/nvmem/Kconfig
+index 5bc9c4874fe3..de14a5390341 100644
+--- a/drivers/nvmem/Kconfig
++++ b/drivers/nvmem/Kconfig
+@@ -417,4 +417,14 @@ config NVMEM_QORIQ_EFUSE
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called nvmem_qoriq_efuse.
+ 
++config NVMEM_RTK_EFUSE
++	tristate "Realtek SoCs eFuse support"
++	depends on ARCH_REALTEK || COMPILE_TEST
++	depends on HAS_IOMEM
++	help
++	  This is a driver to access specific data from eFuse
++
++	  This driver can also be built as a module. If so, the module
++	  will be called efuse-rtk.
++
+ endif
+diff --git a/drivers/nvmem/Makefile b/drivers/nvmem/Makefile
+index 423baf089515..47b1987281ed 100644
+--- a/drivers/nvmem/Makefile
++++ b/drivers/nvmem/Makefile
+@@ -81,3 +81,5 @@ obj-$(CONFIG_NVMEM_ZYNQMP)		+= nvmem_zynqmp_nvmem.o
+ nvmem_zynqmp_nvmem-y			:= zynqmp_nvmem.o
+ obj-$(CONFIG_NVMEM_QORIQ_EFUSE)		+= nvmem-qoriq-efuse.o
+ nvmem-qoriq-efuse-y			:= qoriq-efuse.o
++obj-$(CONFIG_NVMEM_RTK_EFUSE)			+= nvmem_rtk-efuse.o
++nvmem_rtk-efuse-y			:= rtk-efuse.o
+-- 
+2.45.2
+

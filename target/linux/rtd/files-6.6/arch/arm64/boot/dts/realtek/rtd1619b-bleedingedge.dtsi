@@ -1,0 +1,817 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2020 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/regulator/anpec,apw888x.h>
+#include <dt-bindings/soc/realtek,pm.h>
+#include <dt-bindings/thermal/thermal.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
+#include "rtd16xxb.dtsi"
+#include "rtd16xxb-etn-wol-pattern.dtsi"
+
+/ {
+	chosen {
+		stdout-path = "serial0:460800n8";
+		bootargs = "earlycon=uart8250,mmio32,0x98007800 console=ttyS0,460800 8250.nr_uarts=3 init=/init loglevel=4 max_loop=64 loop.max_part=7";
+	};
+
+	aliases {
+		ethernet = &nic;
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		mmc0 = &emmc;
+		mmc1 = &sd;
+	};
+
+	vcc_ddr: vcc1v2-ddr {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc1v2-ddr";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+	};
+
+	vcc_3v3_pcie: vcc-3v3-pcie {
+		status = "okay";
+		compatible = "regulator-fixed";
+		regulator-name = "vcc_3v3_pcie";
+		regulator-boot-on;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		enable-active-high;
+		regulator-always-on;	
+	};
+
+	rfkill_wlan: rfkill-wifi {
+		compatible = "rfkill-gpio";
+		label = "rfkill-sdio-wlan";
+		rfkill-name = "wlan";
+		reset-gpios = <&gpio 59 GPIO_ACTIVE_HIGH>; // WIFI_WAKE_HOST， 模组WiFi使能引脚，根据实际原理图配置
+		shutdown-gpios = <&gpio 61 GPIO_ACTIVE_HIGH>; // WIFI_REG_ON， 电源控制引脚，根据实际原理图配置
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		status = "okay";
+
+		user_key: user-key {
+			label = "user-key";
+			linux,code = <KEY_POWER>;
+			gpios = <&gpio 26 GPIO_ACTIVE_HIGH>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&user_key_pin>;
+		};
+	};
+
+	board_leds: board-leds {
+		compatible = "gpio-leds";
+		status = "okay";
+
+		pwr_led: pwr-led {
+			label = "power:led";
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_POWER;
+			gpios = <&gpio 62 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+			default-state = "on";
+		};
+
+		ssd_led: ssd-led {
+			label = "pcie:disk";
+			color = <LED_COLOR_ID_BLUE>;
+			gpios = <&gpio 47 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "disk-activity";
+			function = LED_FUNCTION_DISK;
+		};
+	};
+};
+
+&cec {
+	status = "okay";
+};
+
+&cp {
+	status = "okay";
+};
+
+&cpu0 {
+	cpu-supply = <&cpu_supp>;
+	operating-points-v2 = <&cpu_opps>;
+	#cooling-cells = <2>;
+};
+
+&cpu1 {
+	cpu-supply = <&cpu_supp>;
+	operating-points-v2 = <&cpu_opps>;
+	#cooling-cells = <2>;
+};
+
+&cpu2 {
+	cpu-supply = <&cpu_supp>;
+	operating-points-v2 = <&cpu_opps>;
+	#cooling-cells = <2>;
+};
+
+&cpu3 {
+	cpu-supply = <&cpu_supp>;
+	operating-points-v2 = <&cpu_opps>;
+	#cooling-cells = <2>;
+};
+
+&cpu_dvfs {
+	fss,opp-updated = <0>;
+	fss,volt-correct = <25000>;
+	fss,volt-step = <25000>;
+	fss,volt-min = <775000>;
+	fss,volt-max = <1087500>;
+
+	bsv,opp-updated = <0>;
+	bsv,volt-correct = <137500 150000>;
+	bsv,volt-step = <25000>;
+	bsv,volt-min = <800000>;
+	bsv,volt-max = <1087500>;
+
+	cpu_opps: opp-table-cpu {
+		compatible = "operating-points-v2";
+		opp-shared;
+		opp1000: opp-1000000000 {
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <800000>;
+			opp-microvolt-bsv = <0>;
+			opp-microvolt-fss = <0>;
+			clock-latency-ns = <150000>;
+			status = "disabled";
+		};
+
+		opp1100: opp-1100000000 {
+			opp-hz = /bits/ 64 <1100000000>;
+			opp-microvolt = <825000>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1200: opp-1200000000 {
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <850000>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1300: opp-1300000000 {
+			opp-hz = /bits/ 64 <1300000000>;
+			opp-microvolt = <875000>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1400: opp-1400000000 {
+			opp-hz = /bits/ 64 <1400000000>;
+			opp-microvolt = <900000>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1500: opp-1500000000 {
+			opp-hz = /bits/ 64 <1500000000>;
+			opp-microvolt = <937500>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1600: opp-1600000000 {
+			opp-hz = /bits/ 64 <1600000000>;
+			opp-microvolt = <987500>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1700: opp-1700000000 {
+			opp-hz = /bits/ 64 <1700000000>;
+			opp-microvolt = <1037500>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			opp-suspend;
+			status = "okay";
+		};
+	};
+};
+
+&cpu_thermal {
+	trips {
+		cpu_alert0: cpu-alert0 {
+			temperature = <90000>;
+			hysteresis = <0>;
+			type = "passive";
+		};
+
+		cpu_alert1: cpu-alert1 {
+			temperature = <105000>;
+			hysteresis = <0>;
+			type = "passive";
+		};
+	};
+
+	cooling-maps {
+		cpu-map0 {
+			trip = <&cpu_alert0>;
+			cooling-device = <&cpu0 2 3>;
+			contribution = <70>;
+		};
+
+		cpu-map1 {
+			trip = <&cpu_alert1>;
+			cooling-device = <&cpu0 4 THERMAL_NO_LIMIT>;
+			contribution = <70>;
+		};
+	};
+};
+
+&cpu_tm {
+	status = "okay";
+};
+
+&dbgprot {
+	status = "okay";
+};
+
+&emmc {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+	gpio-line-names =
+		/* GPIO_0-3 */
+		"", "", "", "",
+		/* GPIO_4-7 */
+		"", "", "", "",
+		/* GPIO_8-11 */
+		"", "", "", "",
+		/* GPIO_12-15 */
+		"", "", "", "",
+		/* GPIO_16-19 */
+		"", "", "PIN_21", "PIN_23",
+		/* GPIO_20-23 */
+		"PIN_24", "PIN_26", "PIN_37", "",
+		/* GPIO_24-27 */
+		"", "", "", "",
+		/* GPIO_28-31 */
+		"", "PIN_3", "", "PIN_19",
+		/* GPIO_32-35 */
+		"", "", "", "",
+		/* GPIO_36-39 */
+		"", "", "", "",
+		/* GPIO_40-43 */
+		"", "", "", "",
+		/* GPIO_44-47 */
+		"", "", "PIN_5", "",
+		/* GPIO_48-51 */
+		"", "", "PIN_36", "",
+		/* GPIO_52-55 */
+		"", "", "", "",
+		/* GPIO_56-59 */
+		"", "", "", "",
+		/* GPIO_60-63 */
+		"", "", "", "",
+		/* GPIO_64-67 */
+		"", "", "PIN_35", "PIN_33",
+		/* GPIO_68-71 */
+		"PIN_31", "PIN_29", "PIN_15", "PIN_13",
+		/* GPIO_72-75 */
+		"PIN_11", "PIN_7", "PIN_18", "PIN_16",
+		/* GPIO_76-79 */
+		"PIN_12", "", "", "",
+		/* GPIO_80-81 */
+		"", "";
+};
+
+&gpu {
+	operating-points-v2 = <&gpu_opps>;
+	status = "okay";
+
+	gpu_opps: opp-table-gpu {
+		compatible = "operating-points-v2",
+			     "operating-points-v2-mali";
+
+		opp-450000000 {
+			opp-hz = /bits/ 64 <450000000>;
+			opp-hz-real = /bits/ 64 <450000000>;
+			opp-microvolt = <800000>;
+			opp-suspend;
+		};
+
+		opp-550000000 {
+			opp-hz = /bits/ 64 <550000000>;
+			opp-hz-real = /bits/ 64 <550000000>;
+			opp-microvolt = <800000>;
+		};
+
+		opp-650000000 {
+			opp-hz = /bits/ 64 <650000000>;
+			opp-hz-real = /bits/ 64 <650000000>;
+			opp-microvolt = <800000>;
+		};
+
+		opp-702000000 {
+			opp-hz = /bits/ 64 <702000000>;
+			opp-hz-real = /bits/ 64 <702000000>;
+			opp-microvolt = <800000>;
+		};
+	};
+};
+
+&display_subsystem {
+	ports = <&vo0_out>;
+	status = "okay";
+};
+
+&vo0 {
+	status = "okay";
+};
+
+&vo1 {
+	status = "disabled";
+	vo1_out: port {
+		vo1_out_dsi: endpoint {
+			remote-endpoint = <&dsi_in_vo1>;
+		};
+	};
+};
+
+&vo2 {
+	status = "disabled";
+};
+
+&hdmi {
+	hdmi5v-gpios = <&gpio 5 GPIO_ACTIVE_HIGH>;
+	ext-flags = <0x0>;
+};
+
+&dsi {
+	status = "okay";
+
+	ports {
+		dsi_in: port@0 {
+			reg = <0>;
+			dsi_in_vo1: endpoint {
+				reg = <0>;
+				remote-endpoint = <&vo1_out_dsi>;
+			};
+		};
+
+		dsi_out: port@1 {
+			reg = <1>;
+			dsi_out_panel: endpoint {
+				reg = <0>;
+				remote-endpoint = <&panel_in_dsi>;
+			};
+		};
+	};
+};
+
+&hse {
+	status = "okay";
+};
+
+&i2c_0 {
+	clock-frequency = <3400000>;
+	pinctrl-0 = <&i2c_pins_0>;
+	status = "okay";
+
+	apw7899: apw7899@12 {
+		compatible = "anpec,apw7899";
+		reg = <0x12>;
+
+		regulators {
+			compatible = "anpec,apw8886-regulator";
+
+			vd33_supp: dc1 {
+				regulator-name = "vd33";
+				regulator-min-microvolt = <2200000>;
+				regulator-max-microvolt = <3777500>;
+
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-initial-mode = <APW888X_DC_MODE_AUTO>;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <3300000>;
+				};
+			};
+
+			core_supp: dc2 {
+				regulator-name = "core";
+				regulator-min-microvolt = <550000>;
+				regulator-max-microvolt = <1337500>;
+
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-initial-mode = <APW888X_DC_MODE_AUTO>;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <800000>;
+				};
+			};
+
+			cpu_supp: dc3 {
+				regulator-name = "cpudvs";
+				regulator-min-microvolt = <550000>;
+				regulator-max-microvolt = <1337500>;
+
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-initial-mode = <APW888X_DC_MODE_AUTO>;
+				regulator-ramp-delay = <625>;
+				apw888x-disabled-in-shutdown;
+
+				regulator-state-mem {
+					regulator-off-in-suspend;
+					regulator-changeable-in-suspend;
+				};
+			};
+
+			vd18_supp: dc4 {
+				regulator-name = "vd18";
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <2060000>;
+
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-initial-mode = <APW888X_DC_MODE_AUTO>;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+
+			ddr_supp: dc5 {
+				regulator-name = "ddr";
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-initial-mode = <APW888X_DC_MODE_AUTO>;
+				vin-supply = <&vcc_ddr>;
+				apw888x-disabled-in-shutdown;
+
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+
+			vd25_supp: ldo1 {
+				regulator-name = "vd25";
+				regulator-min-microvolt = <1780000>;
+				regulator-max-microvolt = <3020000>;
+
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-initial-mode = <APW888X_LDO_MODE_NORMAL>;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+
+			vfb5 {
+				regulator-name = "vfb5";
+				regulator-min-microvolt = <512500>;
+				regulator-max-microvolt = <700000>;
+
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+		};
+	};
+};
+
+&i2c_1 {
+	status = "okay";
+};
+
+&i2c_3 {
+	status = "okay";
+};
+
+&i2c_5 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	raspits_panel: raspits-panel@45 {
+		compatible = "raspberrypi,7inch-touchscreen-panel";
+		reg = <0x45>;
+
+		port {
+			panel_in_dsi: endpoint {
+				remote-endpoint = <&dsi_out_panel>;
+			};
+		};
+	};
+
+	raspits_touch_ft5426: raspits-touch-ft5426@38 {
+		compatible = "raspits_ft5426";
+		reg = <0x38>;
+	};
+
+};
+
+&irda {
+	wakeup-key = <116>,<148>;
+	status = "okay";
+};
+
+&jpeg {
+	status = "okay";
+};
+
+&nic {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&nic_led_pins>;
+};
+
+/* PCIe M Key */
+&pcie1 {
+	status = "okay";
+	perst-gpios = <&gpio 6 GPIO_ACTIVE_HIGH>;
+	phy-names = "pcie-phy";
+	phys = <&pcie1_phy>;
+};
+
+&pcie1_phy {
+	status = "okay";
+};
+
+/* X1.0: CF express slot 
+ * X1.1: Mini PCIe slot
+*/
+
+&pcie2 {
+	status = "okay";
+	perst-gpios = <&gpio 65 GPIO_ACTIVE_HIGH>;
+	phy-names = "pcie-phy";
+	phys = <&pcie2_phy>;
+};
+
+&pcie2_phy {
+	status = "okay";
+};
+
+&sfc {
+	status = "okay";
+	max-freq = <50000000>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi_pins_loc_spi>;
+};
+
+&pwm {
+	status = "disabled";
+};
+
+&pwr_ve1 {
+	assigned-clock-rates = <540000000>;
+};
+
+&dpi {
+	status = "okay";
+
+	zq-cal {
+		status = "okay";
+	};
+};
+
+&reboot_mode {
+	status = "okay";
+};
+
+&rfkill { 
+	status = "okay";
+	voltage-config = <1>;
+	rfkill-gpios = <&gpio 57 GPIO_ACTIVE_HIGH>;
+};
+
+&lsadc {
+	status = "okay";
+};
+
+&rng {
+	status = "okay";
+};
+
+&rtk_avcpu {
+	status = "okay";
+};
+
+&rtk_fw_pm {
+	status = "okay";
+};
+
+&rtk_pm {
+	wakeup-flags = <NORMAL_MODE>;
+	wakeup-gpio-list = <2 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>,
+			   <4 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>;
+	wakeup-timer = <0>;
+	dco = <DCO_DISABLE>;
+	rtk-bt = <255>; /* for Realtek bluetooth only */
+	status = "okay";
+};
+
+&sb2_inv {
+	status = "okay";
+};
+
+&sd {
+	status = "okay";
+};
+
+&sdio {
+	bus-width = <4>;
+	non-removable;
+	cap-sd-highspeed;
+	cap-mmc-highspeed;
+	sd-uhs-sdr12;
+	sd-uhs-sdr25;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	keep-power-in-suspend;
+	enable-sdio-wakeup;
+	no-sd;
+	no-mmc;
+	wifi-rst-gpios = <&gpio 61 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+&sound {
+	status = "okay";
+};
+
+&tp {
+	status = "okay";
+};
+
+&usb_port0_usb2phy {
+	status = "okay";
+};
+
+&usb_port0 {
+	realtek,power-gpio = <&gpio 48 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+&usb_port1_usb2phy {
+	status = "okay";
+};
+
+&usb_port1 {
+	realtek,power-gpio = <&gpio 48 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+&usb_port2_usb2phy {
+	status = "okay";
+};
+
+&usb_port2_usb3phy {
+	status = "okay";
+};
+
+&usb_port2 {
+	realtek,power-gpio = <&gpio 49 GPIO_ACTIVE_LOW>;
+	status = "okay";
+};
+
+&type_c {
+	realtek,plug-side-switch-gpio = <&gpio 53 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+/* debug console (J1) */
+&uart0 {
+	status = "okay";
+};
+
+/* bluetooth */
+&uart1 {
+	status = "okay";
+	cts-gpios = <&gpio 10 GPIO_ACTIVE_LOW>;
+	rts-gpios = <&gpio 11 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1_pins &uart1_cts_rts>;
+	snps,uart-16550-compatible;
+	current-speed = <1500000>;
+};
+
+&uart2 {
+	status = "okay";
+};
+
+&usb_manager {
+	status = "okay";
+};
+
+&vcpu {
+	status = "okay";
+};
+
+&ve3vcpu {
+	status = "disabled";
+};
+
+&ve1 {
+	status = "okay";
+};
+
+&watchdog {
+	status = "okay";
+};
+
+&npu {
+	status = "okay";
+};
+
+&sata_phy {
+	status = "disabled";
+};
+
+&sata_phy0 {
+	tx-swing = <(-2)>, <(1)>, <(0)>; /* tx swing adjust sample : <gen1>, <gen2>, <gen3> */
+	/delete-property/ tx-swing;
+	tx-emphasis = <3>, <(-2)>, <(-3)>; /* tx emphasis adjust sample : <gen1>, <gen2>, <gen3> */
+	/delete-property/ tx-emphasis;
+	status = "disabled";
+};
+
+&sata_phy1 {
+	status = "disabled";
+};
+
+&ahci_sata {
+	status = "disabled";
+};
+
+&sata_port0 {
+	status = "disabled";
+};
+
+&sata_port1 {
+	status = "disabled";
+};
+
+&rtk_smcc {
+	status = "okay";
+};
+
+&pm_alarm {
+	status = "okay";
+};
+
+&rtk_ve3_uart {
+	status = "okay";
+};
+
+&pm_hifi {
+	hifi-supply = <&cpu_supp>;
+	status = "okay";
+};
+
+&pinctrl {
+	uart1_cts_rts: uart1-cts-rts {
+		pins = "gpio_10", "gpio_11";
+		function = "gpio";
+		bias-pull-down;
+  	};
+
+	keys {
+		user_key_pin: user-key-pin {
+			pins = "gpio_26";
+			function = "gpio";
+			bias-pull-up;
+		};
+	};
+
+	leds {
+		nic_led_pins: nic-led-pins {
+			pins = "gpio_15", "gpio_23";
+			function = "etn_led";
+		};
+	};	
+};

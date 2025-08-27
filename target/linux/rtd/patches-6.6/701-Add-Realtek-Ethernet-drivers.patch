@@ -1,0 +1,68 @@
+From 49ee8926d04b4a31fee681cad658bef48911028a Mon Sep 17 00:00:00 2001
+From: TY Chang <tychang@realtek.com>
+Date: Mon, 23 Oct 2023 16:56:49 +0800
+Subject: [PATCH] net: ethernet: realtek: update Makefile and Kconfig for r8125
+ and r8168
+
+Change-Id: I445d76a0c82dfc524899f8d2df4741c72da4b4b6
+---
+ drivers/net/ethernet/realtek/Kconfig  | 32 +++++++++++++++++++++++++++
+ drivers/net/ethernet/realtek/Makefile |  2 ++
+ 2 files changed, 34 insertions(+)
+
+diff --git a/drivers/net/ethernet/realtek/Kconfig b/drivers/net/ethernet/realtek/Kconfig
+index 0de8a6b2e758..88b46ae32573 100644
+--- a/drivers/net/ethernet/realtek/Kconfig
++++ b/drivers/net/ethernet/realtek/Kconfig
+@@ -123,6 +123,38 @@ config R8169SOC
+ 
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called r8169soc.  This is recommended.
++
++config R8168
++	tristate "Realtek 8168 gigabit ethernet support"
++	depends on PCI
++	select FW_LOADER
++	select CRC32
++	select MII
++	help
++	  Say Y here if you have a Realtek 8168 PCI Gigabit Ethernet adapter.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called r8168.  This is recommended.
++
++config R8125
++	tristate "Realtek 8125 gigabit ethernet support"
++	depends on PCI
++	select FW_LOADER
++	select CRC32
++	select MII
++	help
++	  Say Y here if you have a Realtek 8125 PCI Gigabit Ethernet adapter.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called r8125.  This is recommended.
++
++config R8125_SG_TSO_ON
++	bool "Realtek 8125 enable scatter-gather and TCP segment offload"
++	depends on R8125
++	default y
++	help
++	  Say Y here to enable R8125 SG and TSO feature by default.
++
+ config RTL_RX_NO_COPY
+ 	bool "Support to receive packets without memory copy"
+ 	default n
+diff --git a/drivers/net/ethernet/realtek/Makefile b/drivers/net/ethernet/realtek/Makefile
+index 5b3af94eb565..a5ada1952163 100644
+--- a/drivers/net/ethernet/realtek/Makefile
++++ b/drivers/net/ethernet/realtek/Makefile
+@@ -9,3 +9,5 @@ obj-$(CONFIG_ATP) += atp.o
+ r8169-objs += r8169_main.o r8169_firmware.o r8169_phy_config.o
+ obj-$(CONFIG_R8169) += r8169.o
+ obj-$(CONFIG_R8169SOC) += r8169soc.o
++obj-$(CONFIG_R8168) += r8168/
++obj-$(CONFIG_R8125) += r8125/
+-- 
+2.42.0
+

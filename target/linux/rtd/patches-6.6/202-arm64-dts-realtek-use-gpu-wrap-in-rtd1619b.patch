@@ -1,0 +1,75 @@
+From 2f41dc9754d5f949fd621524bf6bdccfc5fc57ab Mon Sep 17 00:00:00 2001
+From: Edgar Lee <cylee12@realtek.com>
+Date: Wed, 7 Feb 2024 14:31:58 +0800
+Subject: [PATCH 2/3] arm64: dts: realtek: use gpu-wrap in rtd1619b
+
+Change-Id: Ibbd44d760a8b5993624fbf9cab3d9a203ab9842c
+---
+ arch/arm64/boot/dts/realtek/rtd16xxb.dtsi | 42 +++++++++++++++--------
+ 1 file changed, 27 insertions(+), 15 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi b/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
+index 6e321c726ec8..1fe4c6c23652 100644
+--- a/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
++++ b/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
+@@ -676,30 +676,42 @@ jpeg: jpeg@3e000 {
+ 				status = "disabled";
+ 			};
+ 
+-			gpu: gpu@1d0000 {
+-				compatible = "arm,mali-midgard", "realtek,rtd1619b-mali";
+-				reg = <0x1d0000 0x10000>;
+-				interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>,
+-					     <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>,
+-					     <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
+-				interrupt-names = "JOB", "MMU", "GPU";
++			gpu-wrap@1d0000 {
++				reg = <0x1d0000 0x4000>,
++				      <0x1d6000 0x1000>;
++				reg-names = "ip", "bist";
++				compatible = "realtek,rtd1619b-gpu-wrap";
+ 				clocks = <&cc RTD1619B_CRT_CLK_EN_GPU>;
+-				clock-name = "clk_mali";
+ 				resets = <&cc RTD1619B_CRT_RSTN_GPU>, <&cc RTD1619B_CRT_RSTN_GPU_BIST>;
+ 				reset-names = "core", "bist";
+ 				power-domains = <&pwr_gpu>;
+ 				nvmem-cells = <&otp_bist_rst_ctrl>;
+ 				nvmem-cell-names = "bist_rst_ctrl";
+-				status = "disabled";
++
++				#address-cells = <1>;
++				#size-cells = <1>;
++				ranges = <0x0 0x1d0000 0x20000>;
+ 				assigned-clocks = <&cc RTD1619B_CRT_PLL_GPU>;
+ 				assigned-clock-rates = <702000000>;
+ 
+-				power_model {
+-					compatible = "arm,mali-simple-power-model";
+-					static-coefficient = <0>;
+-					dynamic-coefficient = <0>;
+-					ts = <0 0 0 0>;
+-					thermal-zone = "";
++				gpu: gpu@0 {
++					compatible = "arm,mali-midgard";
++					reg = <0x0 0x4000>;
++					interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>,
++						     <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>,
++						     <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
++					interrupt-names = "JOB", "MMU", "GPU";
++					status = "disabled";
++					clocks = <&cc RTD1619B_CRT_CLK_EN_GPU>;
++					clock-name = "clk_mali";
++
++					power_model {
++						compatible = "arm,mali-simple-power-model";
++						static-coefficient = <0>;
++						dynamic-coefficient = <0>;
++						ts = <0 0 0 0>;
++						thermal-zone = "";
++					};
+ 				};
+ 			};
+ 
+-- 
+2.42.0
+

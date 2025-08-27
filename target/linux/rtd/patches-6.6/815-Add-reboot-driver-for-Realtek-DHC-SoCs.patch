@@ -1,0 +1,42 @@
+From 041e3d38570cbcb28e9444907fa618ca054c5edb Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Mon, 14 Nov 2022 17:06:42 +0800
+Subject: [PATCH] power: reset: add reboot driver for Realtek DHC SoCs
+
+Change-Id: Ia658cb14ffa46bc787e078b19b23058518adbfa4
+---
+ drivers/power/reset/Kconfig  | 7 +++++++
+ drivers/power/reset/Makefile | 1 +
+ 2 files changed, 8 insertions(+)
+
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index 411e00b255d6..6c3bf6f69f5a 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -304,4 +304,11 @@ config POWER_MLXBF
+ 	help
+ 	  This driver supports reset or low power mode handling for Mellanox BlueField.
+ 
++config POWER_RESET_RTK
++	tristate "Realtek reset driver"
++	depends on ARCH_REALTEK
++	default y
++	help
++	  Reboot support for Realtek SoCs.
++
+ endif
+diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+index a95d1bd275d1..81d570199dae 100644
+--- a/drivers/power/reset/Makefile
++++ b/drivers/power/reset/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_POWER_RESET_KEYSTONE) += keystone-reset.o
+ obj-$(CONFIG_POWER_RESET_SYSCON) += syscon-reboot.o
+ obj-$(CONFIG_POWER_RESET_SYSCON_POWEROFF) += syscon-poweroff.o
+ obj-$(CONFIG_POWER_RESET_RMOBILE) += rmobile-reset.o
++obj-$(CONFIG_POWER_RESET_RTK) += rtk-reboot.o
+ obj-$(CONFIG_REBOOT_MODE) += reboot-mode.o
+ obj-$(CONFIG_SYSCON_REBOOT_MODE) += syscon-reboot-mode.o
+ obj-$(CONFIG_POWER_RESET_SC27XX) += sc27xx-poweroff.o
+-- 
+2.45.2
+

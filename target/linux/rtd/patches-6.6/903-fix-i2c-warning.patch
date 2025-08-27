@@ -1,0 +1,135 @@
+From cb314424cfd64a50969d22a37ccc5a76c345844a Mon Sep 17 00:00:00 2001
+From: simon_hsu <simon_hsu@realtek.com>
+Date: Fri, 07 Feb 2025 11:27:52 +0800
+Subject: [PATCH] i2c: rtk: fix jira AUT-1145, i2c get unexpected interrupt
+
+[Affected Platforms] all
+[Validated Platform] rtd1920s, rtd1619b
+
+Change-Id: Ib586eaf1a31e90fb3ccd88d5594e5bab34dbaeea
+---
+
+diff --git a/drivers/i2c/busses/i2c-rtk.c b/drivers/i2c/busses/i2c-rtk.c
+index 851a100..afc8210 100644
+--- a/drivers/i2c/busses/i2c-rtk.c
++++ b/drivers/i2c/busses/i2c-rtk.c
+@@ -21,6 +21,10 @@
+ #include <linux/pinctrl/consumer.h>
+ #include <linux/platform_device.h>
+ #include <linux/reset.h>
++#include <linux/regmap.h>
++
++#include <linux/arm-smccc.h>
++#include <linux/nvmem-consumer.h>
+ 
+ /* I2C Registers */
+ #define I2C_CON			0x00
+@@ -55,6 +59,7 @@
+ #define I2C_RXFLR		0x78
+ #define I2C_SDA_HOLD		0x7c
+ #define I2C_TX_ABRT_SOURCE	0x80
++#define I2C_ENABLE_STATUS	0x9c
+ #define I2C_COMP_PARAM_1	0xF4
+ 
+ /* I2C_CONTROL Masks */
+@@ -91,6 +96,8 @@
+ #define INT_DEFAULT_MASK	(RX_FULL | TX_EMPTY | TX_ABRT | STOP_DET)
+ 
+ /* I2C_IC_STATUS */
++#define IC_ACTIVITY		(1UL << 0)
++#define MST_ACTIVITY		(1UL << 5)
+ #define SLV_ACTIVITY		(1UL << 6)
+ 
+ #define STATUS_IDLE		0x0
+@@ -359,9 +366,32 @@
+ 	return 0;
+ }
+ 
++static void __rtk_i2c_disable(struct rtk_i2c_dev *priv)
++{
++	int timeout = 100;
++	unsigned int status;
++
++	do {
++		writel(0, priv->base + I2C_ENABLE);
++
++		status = readl(priv->base + I2C_ENABLE_STATUS);
++		if ((status & 1) == 0)
++			return;
++		/*
++		 * Wait 10 times the signaling period of the highest I2C
++		 * transfer supported by the driver (for 400KHz this is
++		 * 25us) as described in the DesignWare I2C databook.
++		 */
++		usleep_range(25, 250);
++	} while (timeout--);
++
++	dev_warn(priv->dev, "timeout in disabling adapter\n");
++}
++
+ static void rtk_i2c_disable(struct rtk_i2c_dev *priv)
+ {
+-	writel(0, priv->base + I2C_ENABLE);
++	__rtk_i2c_disable(priv);
++
+ 	writel(0, priv->base + I2C_INTR_MASK);
+ 	readl(priv->base + I2C_CLR_INT);
+ }
+@@ -463,6 +493,25 @@
+ 		dev_err(priv->dev, "%s: %s\n", __func__, abort_sources[i]);
+ }
+ 
++static int rtk_i2c_wait_bus_not_busy(struct rtk_i2c_dev *priv)
++{
++	unsigned int val;
++	int ret;
++
++	ret = read_poll_timeout(readl, val, !(val & IC_ACTIVITY), 1100, 20000,
++				false, (priv->base + I2C_IC_STATUS));
++	if (ret) {
++		dev_warn(priv->dev, "timeout waiting for bus ready\n");
++
++		i2c_recover_bus(&priv->adap);
++
++		val = readl(priv->base + I2C_IC_STATUS);
++		if (!(val & IC_ACTIVITY))
++			ret = 0;
++	}
++	return ret;
++}
++
+ static void rtk_i2c_xfer_read(struct rtk_i2c_dev *priv)
+ {
+ 	struct i2c_msg *msgs = priv->msgs;
+@@ -591,6 +640,7 @@
+ 	struct arm_smccc_res res = { 0 };
+ 	unsigned int val;
+ 	unsigned int addr = 0;
++	int ret;
+ 
+ 	if (priv->slave != NULL) {
+ 		priv->msg_err = -EPROTOTYPE;
+@@ -607,7 +657,13 @@
+ 	priv->rx_outstanding = 0;
+ 	priv->abort_source = 0;
+ 
+-	writel(0, priv->base + I2C_ENABLE);
++	ret = rtk_i2c_wait_bus_not_busy(priv);
++	if (ret < 0) {
++		priv->msg_err = -EIO;
++		goto fail;
++	}
++
++	__rtk_i2c_disable(priv);
+ 
+ 	if (priv->ca_type == IGLOO_CA_TYPE) {
+ 		arm_smccc_smc(RTK_PROCESS_I2C_0_READ + adap->nr, 0, 0, 0, 0, 0, 0, 0, &res);
+@@ -640,6 +696,8 @@
+ 
+ 	writel(1, priv->base + I2C_ENABLE);
+ 
++	readl(priv->base + I2C_ENABLE_STATUS);
++
+ 	readl(priv->base + I2C_CLR_INT);
+ 	rtk_i2c_int_enable(priv, INT_DEFAULT_MASK);
+ 

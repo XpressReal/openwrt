@@ -1,0 +1,69 @@
+From 3c89641eb55fd1554964a1f75e0deced65b22dd6 Mon Sep 17 00:00:00 2001
+From: "T.J. Mercier" <tjmercier@google.com>
+Date: Mon, 14 Nov 2022 19:45:09 +0000
+Subject: [PATCH 27/35] ANDROID: dma-buf: heaps: Minor cleanup of
+ dmabuf_page_pool includes
+
+Remove the unused freezer, slab, device, and kref includes.
+Move shrinker include to implementation file.
+Fix dmabuf_page_pool documentation.
+
+Fixes: 060e38dce1d6 ("ANDROID: dma-buf: heaps: replace mutex lock with spinlock")
+Fixes: cc46bc6803ad ("ANDROID: dma-buf: heaps: Add a shrinker controlled page pool")
+Change-Id: Ie9ee58a02740c7833e60aed8a491b88d14c366e3
+Signed-off-by: T.J. Mercier <tjmercier@google.com>
+---
+ drivers/dma-buf/heaps/page_pool.c | 7 ++++---
+ drivers/dma-buf/heaps/page_pool.h | 7 ++-----
+ 2 files changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/page_pool.c b/drivers/dma-buf/heaps/page_pool.c
+index 7a270ea5eab0..8a75f2a7754d 100644
+--- a/drivers/dma-buf/heaps/page_pool.c
++++ b/drivers/dma-buf/heaps/page_pool.c
+@@ -8,12 +8,13 @@
+  * Copyright (C) 2011 Google, Inc.
+  */
+ 
+-#include <linux/freezer.h>
++#include "page_pool.h"
++
+ #include <linux/list.h>
+-#include <linux/slab.h>
++#include <linux/shrinker.h>
++#include <linux/spinlock.h>
+ #include <linux/swap.h>
+ #include <linux/sched/signal.h>
+-#include "page_pool.h"
+ 
+ static LIST_HEAD(pool_list);
+ static DEFINE_MUTEX(pool_list_lock);
+diff --git a/drivers/dma-buf/heaps/page_pool.h b/drivers/dma-buf/heaps/page_pool.h
+index bfdb78bd3363..891adee7491f 100644
+--- a/drivers/dma-buf/heaps/page_pool.h
++++ b/drivers/dma-buf/heaps/page_pool.h
+@@ -10,11 +10,8 @@
+ #ifndef _DMABUF_PAGE_POOL_H
+ #define _DMABUF_PAGE_POOL_H
+ 
+-#include <linux/device.h>
+-#include <linux/kref.h>
+ #include <linux/mm_types.h>
+-#include <linux/spinlock.h>
+-#include <linux/shrinker.h>
++#include <linux/spinlock_types.h>
+ #include <linux/types.h>
+ 
+ /* page types we track in the pool */
+@@ -29,7 +26,7 @@ enum {
+  * struct dmabuf_page_pool - pagepool struct
+  * @count[]:		array of number of pages of that type in the pool
+  * @items[]:		array of list of pages of the specific type
+- * @mutex:		lock protecting this struct and especially the count
++ * @lock:		lock protecting this struct and especially the count
+  *			item list
+  * @gfp_mask:		gfp_mask to use from alloc
+  * @order:		order of pages in the pool
+-- 
+2.45.2
+

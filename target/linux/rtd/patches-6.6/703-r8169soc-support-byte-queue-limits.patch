@@ -1,0 +1,89 @@
+From 0793a48918de71136d4f08ac206f4df9c48eeb1d Mon Sep 17 00:00:00 2001
+From: ed <ed@realtek.com>
+Date: Fri, 15 Dec 2023 09:41:05 +0800
+Subject: [PATCH] add r8169soc Support-for-byte-queue-limits
+
+- rtl_start_xmit and rtl_start_xmit_no_close
+- rtl_tx and rtl_tx_no_close
+---
+ drivers/net/ethernet/realtek/r8169soc.c               | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+Index: linux-5.10.169/drivers/net/ethernet/realtek/r8169soc.c
+===================================================================
+--- linux-5.10.169.orig/drivers/net/ethernet/realtek/r8169soc.c
++++ linux-5.10.169/drivers/net/ethernet/realtek/r8169soc.c
+@@ -3486,6 +3486,7 @@ static void rtl8169_tx_clear(struct rtl8
+ 	rtl8169_tx_clear_range(tp, tp->dirty_tx, NUM_TX_DESC);
+ 	tp->cur_tx = 0;
+ 	tp->dirty_tx = 0;
++	netdev_reset_queue(tp->dev);
+ }
+ 
+ static void rtl_reset_work(struct rtl8169_private *tp)
+@@ -3686,6 +3687,7 @@ static netdev_tx_t rtl_start_xmit(struct
+ 	txd->opts2 = cpu_to_le32(opts[1]);
+ 
+ 	skb_tx_timestamp(skb);
++	netdev_sent_queue(dev, skb->len);
+ 
+ 	wmb(); /* make sure txd->addr and txd->opts2 is ready */
+ 
+@@ -3736,6 +3738,7 @@ err_stop_0:
+ static void rtl_tx(struct net_device *dev, struct rtl8169_private *tp)
+ {
+ 	unsigned int dirty_tx, tx_left;
++	unsigned int pkts_compl = 0, bytes_compl = 0;
+ 
+ 	dirty_tx = tp->dirty_tx;
+ 	smp_rmb(); /* make sure dirty_tx is updated */
+@@ -3758,6 +3761,8 @@ static void rtl_tx(struct net_device *de
+ 			tp->tx_stats.packets++;
+ 			tp->tx_stats.bytes += tx_skb->skb->len;
+ 			u64_stats_update_end(&tp->tx_stats.syncp);
++			bytes_compl += tx_skb->skb->len;
++			pkts_compl++;
+ 			dev_kfree_skb(tx_skb->skb);
+ 			tx_skb->skb = NULL;
+ 		}
+@@ -3765,6 +3770,7 @@ static void rtl_tx(struct net_device *de
+ 		tx_left--;
+ 	}
+ 
++	netdev_completed_queue(dev, pkts_compl, bytes_compl);
+ 	if (tp->dirty_tx != dirty_tx) {
+ 		tp->dirty_tx = dirty_tx;
+ 		/* Sync with rtl_start_xmit:
+@@ -3858,6 +3864,7 @@ static netdev_tx_t rtl_start_xmit_no_clo
+ 	txd->opts2 = cpu_to_le32(opts[1]);
+ 
+ 	skb_tx_timestamp(skb);
++	netdev_sent_queue(dev, skb->len);
+ 
+ 	wmb(); /* make sure txd->addr and txd->opts2 is ready */
+ 
+@@ -3914,6 +3921,7 @@ static void rtl_tx_no_close(struct net_d
+ 	u16 close_idx;
+ 	u16 dirty_tx_idx;
+ 	void __iomem *ioaddr = tp->mmio_addr;
++	unsigned int pkts_compl = 0, bytes_compl = 0;
+ 
+ 	dirty_tx = tp->dirty_tx;
+ 	close_idx = RTL_R16(TX_DESC_CLOSE_IDX) & TX_DESC_CNT_MASK;
+@@ -3940,6 +3948,8 @@ static void rtl_tx_no_close(struct net_d
+ 			tp->tx_stats.packets++;
+ 			tp->tx_stats.bytes += tx_skb->skb->len;
+ 			u64_stats_update_end(&tp->tx_stats.syncp);
++			bytes_compl += tx_skb->skb->len;
++			pkts_compl++;
+ 			dev_kfree_skb(tx_skb->skb);
+ 			tx_skb->skb = NULL;
+ 		}
+@@ -3947,6 +3957,7 @@ static void rtl_tx_no_close(struct net_d
+ 		tx_left--;
+ 	}
+ 
++	netdev_completed_queue(dev, pkts_compl, bytes_compl);
+ 	if (tp->dirty_tx != dirty_tx) {
+ 		tp->dirty_tx = dirty_tx;
+ 		/* Sync with rtl_start_xmit_no_close:

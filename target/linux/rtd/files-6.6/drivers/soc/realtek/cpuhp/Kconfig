@@ -1,0 +1,15 @@
+config RTK_CPUHP_QOS
+	bool
+
+config RTK_CPUHP_CONTROL
+	tristate "Realtek CPU Hotplug Controller"
+	select RTK_CPUHP_QOS
+	help
+	  This enables Realtek CPU Hotplug Controller
+
+config RTK_CPUHP_SYSFS
+	tristate "Realtek CPU Hotplug SysFS"
+	select RTK_CPUHP_QOS
+	help
+	  This enables Realtek CPU Hotplug SysFS
+

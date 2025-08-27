@@ -1,0 +1,121 @@
+From 3a8b4a39cc494d4c6ffd12db000a5c9b586ec47c Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 10 Nov 2022 17:36:35 +0800
+Subject: [PATCH] mmc: host: add emmc driver for Realtek DHC SoCs
+
+Change-Id: I35d4358f944dacaa9f9cad927d5f29842c48dff1
+---
+ drivers/mmc/host/Kconfig      | 43 +++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/Makefile     |  4 ++++
+ drivers/mmc/host/cqhci-core.c |  5 ++++
+ drivers/mmc/host/cqhci.h      |  2 ++
+ 4 files changed, 54 insertions(+)
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index bc7e2ad37002..16c449f3ba3d 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -763,6 +763,29 @@ config MMC_DW_PLTFM
+ 
+ 	  If unsure, say Y.
+ 
++config MMC_DW_CQE
++	tristate "Synopsys DesignWare Memory Card with CQE Interface"
++	depends on ARC || ARM || ARM64 || MIPS || COMPILE_TEST
++	select MMC_CQHCI
++	help
++	  This selects support for the Synopsys DesignWare Mobile Storage IP
++	  block, this provides host support for SD and MMC interfaces, in both
++	  PIO, internal DMA mode and external DMA mode.
++
++config MMC_DW_CQE_PLTFM
++	tristate "Synopsys Designware MCI with CQE Support as platform device"
++	depends on MMC_DW_CQE
++	default y
++	help
++	  This selects the common helper functions support for Host Controller
++	  Interface based platform driver. Please select this option if the IP
++	  is present as a platform device. This is the common interface for the
++	  Synopsys Designware IP.
++
++	  If you have a controller with this interface, say Y or M here.
++
++	  If unsure, say Y.
++
+ config MMC_DW_BLUEFIELD
+ 	tristate "BlueField specific extensions for Synopsys DW Memory Card Interface"
+ 	depends on MMC_DW
+@@ -1056,6 +1079,26 @@ config MMC_OWL
+ 	  This selects support for the SD/MMC Host Controller on
+ 	  Actions Semi Owl SoCs.
+ 
++config MMC_DW_CQE_RTK13XX
++	tristate "Realtek RTD13XX specific extensions for Synopsys DW Memory Card Interface"
++	depends on MMC_DW_CQE
++	select MMC_DW_CQE_PLTFM
++	select REGULATOR_FIXED_VOLTAGE
++	help
++	  This selects support for Realtek SoC specific extensions to the
++	  Synopsys DesignWare Memory Card Interface driver. Select this option
++	  for platforms based on RTD16xx SoC's.
++
++config MMC_DW_CQE_RTK
++	tristate "Realtek Soc's specific extensions for Synopsys DW Memory Card Interface After Stark"
++	depends on MMC_DW_CQE
++	select MMC_DW_CQE_PLTFM
++	select REGULATOR_FIXED_VOLTAGE
++	help
++	  This selects support for Realtek SoC specific extensions to the
++	  Synopsys DesignWare Memory Card Interface driver. Select this option
++	  for platforms after RTD16xxb SoC's.
++
+ config MMC_SDHCI_EXTERNAL_DMA
+ 	bool
+ 
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index a693fa3d3f1c..93606ff40fb8 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -101,6 +101,10 @@ cqhci-y					+= cqhci-core.o
+ cqhci-$(CONFIG_MMC_CRYPTO)		+= cqhci-crypto.o
+ obj-$(CONFIG_MMC_HSQ)			+= mmc_hsq.o
+ obj-$(CONFIG_MMC_LITEX)			+= litex_mmc.o
++obj-$(CONFIG_MMC_DW_CQE)        	+= dw_mmc_cqe.o
++obj-$(CONFIG_MMC_DW_CQE_PLTFM)  	+= dw_mmc_cqe-pltfm.o
++obj-$(CONFIG_MMC_DW_CQE_RTK13XX)	+= dw_mmc_cqe-rtk13xx.o
++obj-$(CONFIG_MMC_DW_CQE_RTK)		+= dw_mmc_cqe-rtk.o
+ 
+ ifeq ($(CONFIG_CB710_DEBUG),y)
+ 	CFLAGS-cb710-mmc	+= -DDEBUG
+diff --git a/drivers/mmc/host/cqhci-core.c b/drivers/mmc/host/cqhci-core.c
+index 41e94cd14109..b41447698de0 100644
+--- a/drivers/mmc/host/cqhci-core.c
++++ b/drivers/mmc/host/cqhci-core.c
+@@ -516,6 +516,11 @@ static int cqhci_prep_tran_desc(struct mmc_request *mrq,
+ 
+ 	desc = get_trans_desc(cq_host, tag);
+ 
++	if (cq_host->ops->setup_tran_desc) {
++                cq_host->ops->setup_tran_desc(data, cq_host, desc, sg_count);
++                return 0;
++        }
++
+ 	for_each_sg(data->sg, sg, sg_count, i) {
+ 		addr = sg_dma_address(sg);
+ 		len = sg_dma_len(sg);
+diff --git a/drivers/mmc/host/cqhci.h b/drivers/mmc/host/cqhci.h
+index 1a12e40a02e6..ddfa5bb337e4 100644
+--- a/drivers/mmc/host/cqhci.h
++++ b/drivers/mmc/host/cqhci.h
+@@ -289,6 +289,8 @@ struct cqhci_host_ops {
+ 				 u64 *data);
+ 	void (*pre_enable)(struct mmc_host *mmc);
+ 	void (*post_disable)(struct mmc_host *mmc);
++	void (*setup_tran_desc)(struct mmc_data *data,
++                struct cqhci_host *cq_host, u8 *desc, int sg_count);
+ #ifdef CONFIG_MMC_CRYPTO
+ 	int (*program_key)(struct cqhci_host *cq_host,
+ 			   const union cqhci_crypto_cfg_entry *cfg, int slot);
+-- 
+2.45.2
+

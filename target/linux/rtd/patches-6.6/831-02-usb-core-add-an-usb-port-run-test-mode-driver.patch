@@ -1,0 +1,41 @@
+From 958159eb5c37dc09dc411c3bf1d415d83e41b702 Mon Sep 17 00:00:00 2001
+From: Stanley Chang <stanley_chang@realtek.com>
+Date: Wed, 7 Jun 2023 16:56:19 +0800
+Subject: [PATCH] usb: core: add an usb port run test mode driver
+
+[Information]
+Implement an usb port run test mode driver to run usb 2.0 host CTS
+
+Change-Id: Icc77ba38eaf4fe2a325d54871b3a689a460a3e18
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+---
+ drivers/usb/core/Kconfig  | 6 ++++++
+ drivers/usb/core/Makefile | 1 +
+ 2 files changed, 7 insertions(+)
+
+diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
+index 0c249d5418f0..453437e5367c 100644
+--- a/drivers/usb/core/Kconfig
++++ b/drivers/usb/core/Kconfig
+@@ -122,3 +122,9 @@ config USB_AUTOSUSPEND_DELAY
+ 	  The default value Linux has always had is 2 seconds.  Change
+ 	  this value if you want a different delay and cannot modify
+ 	  the command line or module parameter.
++
++config USB_HOST_TEST_MODE
++	tristate "USB Host CTS test mode"
++	depends on USB
++	help
++	  Enable USB Host CTS testing mode.
+diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
+index ca758f04f9bd..fd98c034c916 100644
+--- a/drivers/usb/core/Makefile
++++ b/drivers/usb/core/Makefile
+@@ -20,3 +20,4 @@ obj-$(CONFIG_USB)		+= usbcore.o
+ 
+ obj-$(CONFIG_USB_LEDS_TRIGGER_USBPORT)	+= ledtrig-usbport.o
+ obj-$(CONFIG_USB_MONITOR_USBPORT)	+= monitor-usbport.o
++obj-$(CONFIG_USB_HOST_TEST_MODE)	+= test-usbport.o
+-- 
+2.45.2
+

@@ -1,0 +1,43 @@
+From 966d9a1870af7dcbc445a058319b09f2d6d394b4 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Mon, 12 Jun 2023 09:53:46 +0800
+Subject: [PATCH] char: hw_random: add Realtek random number generator
+
+Change-Id: Ib9c38ab05e5b73f2e613fe3f8547a6d110f76481
+---
+ drivers/char/hw_random/Kconfig   |   7 +
+ drivers/char/hw_random/Makefile  |   1 +
+ drivers/char/hw_random/rtd-rng.c | 216 +++++++++++++++++++++++++++++++
+ 2 files changed, 224 insertions(+)
+ create mode 100644 drivers/char/hw_random/rtd-rng.c
+
+diff --git a/drivers/char/hw_random/Kconfig b/drivers/char/hw_random/Kconfig
+index 650c7d918080..a4d00930b007 100644
+--- a/drivers/char/hw_random/Kconfig
++++ b/drivers/char/hw_random/Kconfig
+@@ -538,6 +538,13 @@ config HW_RANDOM_ARM_SMCCC_TRNG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called arm_smccc_trng.
+ 
++config HW_RANDOM_REALTEK
++	tristate "Realtek Random Number Generator support"
++	depends on ARCH_REALTEK
++	default HW_RANDOM
++	help
++	  Say Y, if you want to enable random number generator on Realtek platform.
++
+ endif # HW_RANDOM
+ 
+ config UML_RANDOM
+diff --git a/drivers/char/hw_random/Makefile b/drivers/char/hw_random/Makefile
+index a5a1c765a394..6196c0ce7923 100644
+--- a/drivers/char/hw_random/Makefile
++++ b/drivers/char/hw_random/Makefile
+@@ -46,3 +46,4 @@ obj-$(CONFIG_HW_RANDOM_NPCM) += npcm-rng.o
+ obj-$(CONFIG_HW_RANDOM_CCTRNG) += cctrng.o
+ obj-$(CONFIG_HW_RANDOM_XIPHERA) += xiphera-trng.o
+ obj-$(CONFIG_HW_RANDOM_ARM_SMCCC_TRNG) += arm_smccc_trng.o
++obj-$(CONFIG_HW_RANDOM_REALTEK) += rtd-rng.o
+-- 
+2.42.0
+

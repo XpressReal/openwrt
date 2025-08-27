@@ -1,0 +1,47 @@
+From f32f071aaba9a3168466d1aaa99c3936df7c6d9f Mon Sep 17 00:00:00 2001
+From: Edgar Lee <cylee12@realtek.com>
+Date: Wed, 7 Feb 2024 14:41:49 +0800
+Subject: [PATCH 3/3] [panfrost] fix gpu device
+
+Change-Id: Id373b56c58c85afa8b32c065a79ddc2b08e45b90
+---
+ arch/arm64/boot/dts/realtek/rtd16xxb.dtsi | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi b/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
+index c00b10a719bf..2c7961ba244e 100644
+--- a/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
++++ b/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
+@@ -621,15 +621,16 @@ gpu-wrap@1d0000 {
+ 				assigned-clock-rates = <702000000>;
+ 
+ 				gpu: gpu@0 {
+-					compatible = "arm,mali-midgard";
++					compatible = "arm,mali-valhall-jm";
+ 					reg = <0x0 0x4000>;
+ 					interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>,
+ 						     <GIC_SPI 77 IRQ_TYPE_LEVEL_HIGH>,
+ 						     <GIC_SPI 75 IRQ_TYPE_LEVEL_HIGH>;
+-					interrupt-names = "JOB", "MMU", "GPU";
++					interrupt-names = "job", "mmu", "gpu";
+ 					status = "disabled";
+ 					clocks = <&cc RTD1619B_CRT_CLK_EN_GPU>;
+ 					clock-name = "clk_mali";
++					mali-supply = <&gpu_supp>;
+ 
+ 					power_model {
+ 						compatible = "arm,mali-simple-power-model";
+@@ -989,6 +990,13 @@ battery: rtd1xxx-battery.0 {
+ 	ac: rtd1xxx-ac.0 {
+ 		compatible = "realtek,rtd1xxx-ac";
+ 	};
++
++	gpu_supp: gpu-supply {
++		compatible = "regulator-fixed";
++		regulator-name = "gpu-supply";
++		regulator-min-microvolt = <800000>;
++		regulator-max-microvolt = <800000>;
++	};
+ };
+ 
+ &crt {

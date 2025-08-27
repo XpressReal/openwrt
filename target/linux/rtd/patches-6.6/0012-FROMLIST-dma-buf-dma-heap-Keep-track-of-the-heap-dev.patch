@@ -1,0 +1,107 @@
+From e813121531e2203a4ec1b59a552a13b0f76702ff Mon Sep 17 00:00:00 2001
+From: John Stultz <john.stultz@linaro.org>
+Date: Thu, 7 May 2020 20:08:13 +0000
+Subject: [PATCH 12/35] FROMLIST: dma-buf: dma-heap: Keep track of the heap
+ device struct
+
+Keep track of the heap device struct.
+
+This will be useful for special DMA allocations
+and actions.
+
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Link: https://lore.kernel.org/lkml/20201110034934.70898-7-john.stultz@linaro.org/
+Bug: 170887642
+Change-Id: I55b8df5fd9fd46795a8f0171318895297d2dd379
+Signed-off-by: Hridya Valsaraju <hridya@google.com>
+(cherry picked from commit 2501fd6245d8a1a408c7871c0fc8eb9e0116c944)
+Signed-off-by: Palmer Dabbelt <palmerdabbelt@google.com>
+---
+ drivers/dma-buf/dma-heap.c | 28 +++++++++++++++++++++-------
+ include/linux/dma-heap.h   |  9 +++++++++
+ 2 files changed, 30 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/dma-buf/dma-heap.c b/drivers/dma-buf/dma-heap.c
+index 537341d00150..5d3792439bc7 100644
+--- a/drivers/dma-buf/dma-heap.c
++++ b/drivers/dma-buf/dma-heap.c
+@@ -31,6 +31,7 @@
+  * @heap_devt		heap device node
+  * @list		list head connecting to list of heaps
+  * @heap_cdev		heap char device
++ * @heap_dev		heap device struct
+  *
+  * Represents a heap of memory from which buffers can be made.
+  */
+@@ -42,6 +43,7 @@ struct dma_heap {
+ 	struct list_head list;
+ 	struct cdev heap_cdev;
+ 	struct kref refcount;
++	struct device *heap_dev;
+ };
+ 
+ static LIST_HEAD(heap_list);
+@@ -290,6 +292,18 @@ void dma_heap_put(struct dma_heap *h)
+ 	mutex_unlock(&heap_list_lock);
+ }
+ 
++/**
++ * dma_heap_get_dev() - get device struct for the heap
++ * @heap: DMA-Heap to retrieve device struct from
++ *
++ * Returns:
++ * The device struct for the heap.
++ */
++struct device *dma_heap_get_dev(struct dma_heap *heap)
++{
++	return heap->heap_dev;
++}
++
+ struct dma_heap *dma_heap_add(const struct dma_heap_export_info *exp_info)
+ {
+ 	struct dma_heap *heap, *h, *err_ret;
+@@ -336,14 +350,14 @@ struct dma_heap *dma_heap_add(const struct dma_heap_export_info *exp_info)
+ 		goto err1;
+ 	}
+ 
+-	dev_ret = device_create(dma_heap_class,
+-				NULL,
+-				heap->heap_devt,
+-				NULL,
+-				heap->name);
+-	if (IS_ERR(dev_ret)) {
++	heap->heap_dev = device_create(dma_heap_class,
++				       NULL,
++				       heap->heap_devt,
++				       NULL,
++				       heap->name);
++	if (IS_ERR(heap->heap_dev)) {
+ 		pr_err("dma_heap: Unable to create device\n");
+-		err_ret = ERR_CAST(dev_ret);
++		err_ret = ERR_CAST(heap->heap_dev);
+ 		goto err2;
+ 	}
+ 
+diff --git a/include/linux/dma-heap.h b/include/linux/dma-heap.h
+index 2d77d6688392..ab90c8f4e51f 100644
+--- a/include/linux/dma-heap.h
++++ b/include/linux/dma-heap.h
+@@ -59,6 +59,15 @@ void *dma_heap_get_drvdata(struct dma_heap *heap);
+  */
+ const char *dma_heap_get_name(struct dma_heap *heap);
+ 
++/**
++ * dma_heap_get_dev() - get device struct for the heap
++ * @heap: DMA-Heap to retrieve device struct from
++ *
++ * Returns:
++ * The device struct for the heap.
++ */
++struct device *dma_heap_get_dev(struct dma_heap *heap);
++
+ /**
+  * dma_heap_add - adds a heap to dmabuf heaps
+  * @exp_info:		information needed to register this heap
+-- 
+2.45.2
+

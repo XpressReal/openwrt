@@ -1,0 +1,134 @@
+From 0c0b0ee2c94e35be981dc401f40a91ac5fe7fcc8 Mon Sep 17 00:00:00 2001
+From: "T.J. Mercier" <tjmercier@google.com>
+Date: Tue, 21 Mar 2023 19:55:15 +0000
+Subject: [PATCH 30/35] ANDROID: dma-buf: heaps: Move dmabuf_page_pool struct
+ out of the KMI
+
+Users of dmabuf_page_pool should not need to refer to its fields, so
+hide them from the KMI. Add dmabuf_page_pool_get_size to fullfill the
+needs of users.
+
+Bug: 264474028
+Change-Id: I848ff52e73a13568f561deeb6aea48f40dc0960b
+Signed-off-by: T.J. Mercier <tjmercier@google.com>
+---
+ drivers/dma-buf/heaps/page_pool.c | 44 +++++++++++++++++++++++++++++++
+ drivers/dma-buf/heaps/page_pool.h | 33 +++--------------------
+ 2 files changed, 48 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/page_pool.c b/drivers/dma-buf/heaps/page_pool.c
+index 8a75f2a7754d..b2d7aa5a9214 100644
+--- a/drivers/dma-buf/heaps/page_pool.c
++++ b/drivers/dma-buf/heaps/page_pool.c
+@@ -16,6 +16,35 @@
+ #include <linux/swap.h>
+ #include <linux/sched/signal.h>
+ 
++/* page types we track in the pool */
++enum {
++	POOL_LOWPAGE,      /* Clean lowmem pages */
++	POOL_HIGHPAGE,     /* Clean highmem pages */
++
++	POOL_TYPE_SIZE,
++};
++
++/**
++ * struct dmabuf_page_pool - pagepool struct
++ * @count[]:		array of number of pages of that type in the pool
++ * @items[]:		array of list of pages of the specific type
++ * @lock:		lock protecting this struct and especially the count
++ *			item list
++ * @gfp_mask:		gfp_mask to use from alloc
++ * @order:		order of pages in the pool
++ * @list:		list node for list of pools
++ *
++ * Allows you to keep a pool of pre allocated pages to use
++ */
++struct dmabuf_page_pool {
++	int count[POOL_TYPE_SIZE];
++	struct list_head items[POOL_TYPE_SIZE];
++	struct spinlock lock;
++	gfp_t gfp_mask;
++	unsigned int order;
++	struct list_head list;
++};
++
+ static LIST_HEAD(pool_list);
+ static DEFINE_MUTEX(pool_list_lock);
+ 
+@@ -158,6 +187,21 @@ void dmabuf_page_pool_destroy(struct dmabuf_page_pool *pool)
+ }
+ EXPORT_SYMBOL_GPL(dmabuf_page_pool_destroy);
+ 
++unsigned long dmabuf_page_pool_get_size(struct dmabuf_page_pool *pool)
++{
++       int i;
++       unsigned long num_pages = 0;
++
++       spin_lock(&pool->lock);
++       for (i = 0; i < POOL_TYPE_SIZE; ++i)
++               num_pages += pool->count[i];
++       spin_unlock(&pool->lock);
++       num_pages <<= pool->order; /* pool order is immutable */
++
++       return num_pages * PAGE_SIZE;
++}
++EXPORT_SYMBOL_GPL(dmabuf_page_pool_get_size);
++
+ static int dmabuf_page_pool_do_shrink(struct dmabuf_page_pool *pool, gfp_t gfp_mask,
+ 				      int nr_to_scan)
+ {
+diff --git a/drivers/dma-buf/heaps/page_pool.h b/drivers/dma-buf/heaps/page_pool.h
+index 891adee7491f..5f6f938fa5d9 100644
+--- a/drivers/dma-buf/heaps/page_pool.h
++++ b/drivers/dma-buf/heaps/page_pool.h
+@@ -11,37 +11,9 @@
+ #define _DMABUF_PAGE_POOL_H
+ 
+ #include <linux/mm_types.h>
+-#include <linux/spinlock_types.h>
+ #include <linux/types.h>
+ 
+-/* page types we track in the pool */
+-enum {
+-	POOL_LOWPAGE,      /* Clean lowmem pages */
+-	POOL_HIGHPAGE,     /* Clean highmem pages */
+-
+-	POOL_TYPE_SIZE,
+-};
+-
+-/**
+- * struct dmabuf_page_pool - pagepool struct
+- * @count[]:		array of number of pages of that type in the pool
+- * @items[]:		array of list of pages of the specific type
+- * @lock:		lock protecting this struct and especially the count
+- *			item list
+- * @gfp_mask:		gfp_mask to use from alloc
+- * @order:		order of pages in the pool
+- * @list:		list node for list of pools
+- *
+- * Allows you to keep a pool of pre allocated pages to use
+- */
+-struct dmabuf_page_pool {
+-	int count[POOL_TYPE_SIZE];
+-	struct list_head items[POOL_TYPE_SIZE];
+-	struct spinlock lock;
+-	gfp_t gfp_mask;
+-	unsigned int order;
+-	struct list_head list;
+-};
++struct dmabuf_page_pool;
+ 
+ struct dmabuf_page_pool *dmabuf_page_pool_create(gfp_t gfp_mask,
+ 						 unsigned int order);
+@@ -49,4 +21,7 @@ void dmabuf_page_pool_destroy(struct dmabuf_page_pool *pool);
+ struct page *dmabuf_page_pool_alloc(struct dmabuf_page_pool *pool);
+ void dmabuf_page_pool_free(struct dmabuf_page_pool *pool, struct page *page);
+ 
++/* get pool size in bytes */
++unsigned long dmabuf_page_pool_get_size(struct dmabuf_page_pool *pool);
++
+ #endif /* _DMABUF_PAGE_POOL_H */
+-- 
+2.45.2
+

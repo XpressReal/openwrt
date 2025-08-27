@@ -1,0 +1,37 @@
+From ed5350a0b288cb78d52242eea7b9e7cbde77c5f0 Mon Sep 17 00:00:00 2001
+From: "T.J. Mercier" <tjmercier@google.com>
+Date: Tue, 21 Mar 2023 19:28:04 +0000
+Subject: [PATCH 29/35] ANDROID: dma-buf: system_heap: kmap_local_page instead
+ of kmap_atomic
+
+kmap_atomic was deprecated in 5.11, and checkpatch now warns about use
+of it. Replace with kmap_local_page, and do not manually disable
+preemption or page faults.
+
+Bug: 264474028
+Fixes: 818b4f6bb8b8 ("ANDROID: dma-buf: system_heap: Add pagepool support to system heap")
+Change-Id: Idd6413ff56aadf4fd925acb6f567366d0e03166f
+Signed-off-by: T.J. Mercier <tjmercier@google.com>
+---
+ drivers/dma-buf/heaps/system_heap.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index 6cb7b59c0872..f18730a04409 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -317,9 +317,9 @@ static int system_heap_zero_buffer(struct system_heap_buffer *buffer)
+ 
+ 	for_each_sgtable_page(sgt, &piter, 0) {
+ 		p = sg_page_iter_page(&piter);
+-		vaddr = kmap_atomic(p);
++		vaddr = kmap_local_page(p);
+ 		memset(vaddr, 0, PAGE_SIZE);
+-		kunmap_atomic(vaddr);
++		kunmap_local(vaddr);
+ 	}
+ 
+ 	return ret;
+-- 
+2.45.2
+

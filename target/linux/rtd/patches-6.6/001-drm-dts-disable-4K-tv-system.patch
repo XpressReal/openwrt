@@ -1,0 +1,26 @@
+From 02f6fcb28c80ede0d2e9f9126ba42a9076a5e034 Mon Sep 17 00:00:00 2001
+From: Phinex Hung <phinex@realtek.com>
+Date: Mon, 28 Oct 2024 14:09:18 +0800
+Subject: [PATCH] recipes-kernel: drm: dts: disable 4K TV system for
+ Debian/Ubuntu Desktop
+
+---
+ arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi b/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi
+index f320c4026f2a..99840d606dcd 100644
+--- a/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi
++++ b/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi
+@@ -345,7 +345,7 @@ &vo2 {
+ 
+ &hdmi {
+ 	hdmi5v-gpios = <&gpio 5 GPIO_ACTIVE_HIGH>;
+-	ext-flags = <0x0>;
++	ext-flags = <0x1>;
+ };
+ 
+ &hse {
+-- 
+2.34.1
+

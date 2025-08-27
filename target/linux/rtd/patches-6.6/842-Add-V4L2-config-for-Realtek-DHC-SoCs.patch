@@ -1,0 +1,55 @@
+From 8777be859fec1952ad85a0c237ff156d6d5ca26a Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Wed, 14 Aug 2024 14:23:11 +0800
+Subject: [PATCH] media: platform: add V4L2 config for Realtek DHC SoCs
+
+Change-Id: I2f81df37a93cf6cdbf0cf188283c9d63803af072
+---
+ drivers/media/platform/Kconfig            |  1 +
+ drivers/media/platform/rtk_vcodec/Kconfig | 23 +++++++++++++++++++++++
+ 2 files changed, 24 insertions(+)
+ create mode 100644 drivers/media/platform/rtk_vcodec/Kconfig
+
+diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+index 9941b3d437ce..b9c8f4146961 100644
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -87,5 +87,6 @@ source "drivers/media/platform/ti/Kconfig"
+ source "drivers/media/platform/verisilicon/Kconfig"
+ source "drivers/media/platform/via/Kconfig"
+ source "drivers/media/platform/xilinx/Kconfig"
++source "drivers/media/platform/rtk_vcodec/Kconfig"
+ 
+ endif # MEDIA_PLATFORM_DRIVERS
+diff --git a/drivers/media/platform/rtk_vcodec/Kconfig b/drivers/media/platform/rtk_vcodec/Kconfig
+new file mode 100644
+index 000000000000..0f977695670d
+--- /dev/null
++++ b/drivers/media/platform/rtk_vcodec/Kconfig
+@@ -0,0 +1,23 @@
++# SPDX-License-Identifier: GPL-2.0-only
++
++config RTK_V4L2_VDEC
++bool "Realtek V4L2 Video Decoder Interface"
++	depends on VIDEO_DEV
++	select V4L_MEM2MEM_DRIVERS
++	select V4L2_MEM2MEM_DEV
++	select VIDEOBUF2_DMA_CONTIG
++	select VIDEOBUF2_VMALLOC
++	default n
++	help
++	  Realtek V4L2 Video Decoder Driver Interface
++
++config RTK_V4L2_VENC
++bool "Realtek V4L2 Video Encoder Interface"
++	depends on VIDEO_DEV
++	select V4L_MEM2MEM_DRIVERS
++	select V4L2_MEM2MEM_DEV
++	select VIDEOBUF2_DMA_CONTIG
++	select VIDEOBUF2_VMALLOC
++	default n
++	help
++	  Realtek V4L2 Video Encoder Driver Interface
+-- 
+2.34.1
+

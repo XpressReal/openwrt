@@ -1,0 +1,307 @@
+# SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: "http://devicetree.org/schemas/net/realtek,r8169soc.yaml#"
+$schema: "http://devicetree.org/meta-schemas/core.yaml#"
+
+title: Realtek STB SoC r8169soc Ethernet driver
+
+maintainers:
+  - Eric Wang <ericwang@realtek.com>
+
+description:
+  The embedded Realtek STB SoC 8169soc Ethernet driver.
+
+# We need a select here so we don't match all nodes with 'realtek,r8169soc'
+select:
+  properties:
+    compatible:
+      contains:
+        enum:
+          - realtek,rtd119x-r8169soc
+          - realtek,rtd129x-r8169soc
+          - realtek,rtd139x-r8169soc
+          - realtek,rtd16xx-r8169soc
+          - realtek,rtd13xx-r8169soc
+          - realtek,rtd16xxb-r8169soc
+          - realtek,rtd13xxd-r8169soc
+          - realtek,rtd13xxe-r8169soc
+          - realtek,rtd1325-r8169soc
+          - realtek,rtd1625-r8169soc
+
+  required:
+    - compatible
+
+properties:
+  compatible:
+    contains:
+      enum:
+        - realtek,rtd119x-r8169soc
+        - realtek,rtd129x-r8169soc
+        - realtek,rtd139x-r8169soc
+        - realtek,rtd16xx-r8169soc
+        - realtek,rtd13xx-r8169soc
+        - realtek,rtd16xxb-r8169soc
+        - realtek,rtd13xxd-r8169soc
+        - realtek,rtd13xxe-r8169soc
+        - realtek,rtd1325-r8169soc
+        - realtek,rtd1625-r8169soc
+
+  reg:
+    description: Ethernet MMIO address range
+    maxItems: 1
+
+  realtek,iso:
+    description: phandle to the iso registers
+    $ref: "/schemas/types.yaml#/definitions/phandle-array"
+
+  realtek,sb2:
+    description: phandle to the sb2 registers
+    $ref: "/schemas/types.yaml#/definitions/phandle-array"
+
+  realtek,sbx:
+    description: phandle to the sbx registers
+    $ref: "/schemas/types.yaml#/definitions/phandle-array"
+
+  realtek,scpu_wrapper:
+    description: phandle to the scpu_wrapper registers
+    $ref: "/schemas/types.yaml#/definitions/phandle-array"
+
+  realtek,pinctrl:
+    description: phandle to the pinctrl registers
+    $ref: "/schemas/types.yaml#/definitions/phandle-array"
+
+  realtek,sds:
+    description: phandle to the sds registers
+    $ref: "/schemas/types.yaml#/definitions/phandle-array"
+
+  interrupts:
+    maxItems: 1
+
+  pinctrl-names:
+    description: names of pinmux set of corresponding output mode
+    contains:
+      enum:
+        - default
+        - sgmii
+        - rgmii
+        - rmii
+    minItems: 1
+    maxItems: 3
+
+  pinctrl-0:
+    description: phandle to the default pinmux set
+    $ref: "/schemas/types.yaml#/definitions/phandle-array"
+
+  local-mac-address:
+    allOf:
+      - $ref: /schemas/types.yaml#definitions/uint8-array
+      - items:
+          - minItems: 6
+            maxItems: 6
+    description:
+      Specifies the MAC address that was assigned to the network device.
+
+  wol-enable:
+    description:
+      BIT 0:WoL enable
+      BIT 1:CRC match (up to 16 match patterns)
+      BIT 2:WPD (Wake Packet Detection)
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 7
+
+  output-mode:
+    description:
+      Specifies interface type between the Ethernet device and a physical
+      layer (PHY) device.
+      0:embedded PHY (default),
+      1:RGMII to MAC (valid for RTD1295, and RTD1319),
+      2:RGMII to PHY (valid for RTD1319),
+      3:SGMII to MAC (valid for RTD1395, and RTD1619),
+      4:SGMII to PHY (valid for RTD1395, and RTD1619),
+      5:RMII (valid for RTD1319),
+      6:forced link (valid for RTD1319)
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 6
+
+  acp:
+    description:
+      To support ACP (Accelerator Coherence Port) or not.
+      It is only valid for RTD1395, RTD1619, and RTD1319.
+      0:disabled
+      1:enabled
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 1
+
+  eee:
+    description: to support EEE (Energy-Efficient Ethernet) or not
+      0:disabled
+      1:enabled
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 1
+
+  bypass:
+    description: HW bypasses the efuse update flow. (Only valid for rtd139x)
+      0:disabled
+      1:enabled
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 1
+
+  ext-phy-id:
+    description: external PHY ID when output-mode is "SGMII to PHY"
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 31
+
+  sgmii-swing:
+    description:
+      SGMII swing voltage when output-mode is "SGMII to MAC" or "SGMII to PHY"
+      0:640mV
+      1:380mV
+      2:250mV
+      3:190mV
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 3
+
+  voltage:
+    description:
+      RGMII/RMII voltage when output-mode is "RGMII to MAC", "RGMII to PHY", or "RMII"
+      1:1.8V
+      2:2.5V
+      3:3.3V;
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 1
+    maximum: 3
+
+  tx-delay:
+    description:
+      TX delay of RGMII/RMII when output-mode is "RGMII to MAC", "RGMII to PHY", or "RMII"
+      0:0ns
+      1:2ns
+    $ref: /schemas/types.yaml#/definitions/uint32
+    enum: [0, 1]
+
+  rx-delay:
+    description:
+      RX delay of RGMII when output-mode is "RGMII to MAC" or "RGMII to PHY"
+        0:0ns
+        1:2ns
+      RX delay of RMII when output-mode is "RMII"
+        0:0ns
+        1:0.5ns
+        2:1ns
+        3:1.5ns
+        4:2ns
+        5:2.5ns
+        6:3ns
+        7:3.5ns
+    $ref: /schemas/types.yaml#/definitions/uint32
+    minimum: 0
+    maximum: 7
+
+  clocks:
+    description:
+      The "etn_sys" is system clock.
+      The "etn_250m" is 250MHz reference clock.
+      The "sds" is serdes clock
+    minItems: 2
+    maxItems: 3
+
+  clock-names:
+    contains:
+      enum:
+        - etn_sys
+        - etn_250m
+        - sds
+    minItems: 2
+    maxItems: 3
+
+  resets:
+    description:
+      The "gmac" is the reset register for gmac.
+      The "gphy" is the reset register for gphy.
+      The "sds_reg" and "sds" are the reset registers for serdes.
+      The "pcie0_power", "pcie0_phy", "pcie0_sgmii_mdio", "pcie0_phy_mdio"
+      are the reset registers for sgmii.
+    minItems: 2
+    maxItems: 8
+
+  reset-names:
+    contains:
+      enum:
+        - gmac
+        - gphy
+        - sds_reg
+        - sds
+        - pcie0_power
+        - pcie0_phy
+        - pcie0_sgmii_mdio
+        - pcie0_phy_mdio
+    minItems: 2
+    maxItems: 8
+
+  nvmem-cells:
+    description: phandle to the nvmem registers
+    $ref: "/schemas/types.yaml#/definitions/phandle-array"
+
+  nvmem-cell-names:
+    description: names of nvmem-cells
+    contains:
+      enum:
+        - para
+        - idac
+        - rc_r_amp_cal
+    $ref: "/schemas/types.yaml#definitions/string"
+
+required:
+  - compatible
+  - reg
+  - realtek,iso
+  - realtek,pinctrl
+  - interrupts
+  - pinctrl-names
+  - pinctrl-0
+  - local-mac-address
+  - output-mode
+  - eee
+  - clocks
+  - clock-names
+  - resets
+  - reset-names
+  - nvmem-cells
+  - nvmem-cell-names
+
+additionalProperties: true
+
+examples:
+  - |
+    nic: r8169soc@16000 {
+      compatible = "realtek,rtd16xxb-r8169soc";
+      reg = <0x16000 0x1000>;   /* ETN */
+      realtek,iso = <&iso>;
+      realtek,pinctrl = <&pinctrl>;
+      interrupts = <0 22 4>;
+      pinctrl-names = "default";
+      pinctrl-0 = <&etn_led_pins>;
+      local-mac-address = [00 10 20 30 40 50];
+      wol-enable = <0>;
+      output-mode = <0>; /* 0:embedded PHY */
+      acp = <0>; /* 0: disable */
+      eee = <1>; /* 0: disable, 1: enable */
+      clocks = <&ic 11>,
+               <&ic 12>;
+      clock-names = "etn_250m",
+                    "etn_sys";
+      resets = <&ic 0x0009>,
+               <&ic 0x000a>;
+      reset-names = "gmac",
+                    "gphy";
+      nvmem-cells = <&otp_etn_rc_r_amp_cal>;
+      nvmem-cell-names = "rc_r_amp_cal";
+    };

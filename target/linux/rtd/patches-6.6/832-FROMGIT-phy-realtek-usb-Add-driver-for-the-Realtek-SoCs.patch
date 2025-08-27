@@ -1,0 +1,51 @@
+From f644e9db6a5660df7b545da68ba27d20f3436231 Mon Sep 17 00:00:00 2001
+From: Stanley Chang <stanley_chang@realtek.com>
+Date: Thu, 18 May 2023 19:22:14 +0800
+Subject: [PATCH] FROMGIT: phy: realtek: usb: Add driver for the Realtek SoC
+ USB 2.0 PHY
+
+Realtek DHC (digital home center) RTD SoCs support DWC3 XHCI USB
+controller. Added the driver to drive the USB 2.0 PHY transceivers.
+
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+Link: https://lore.kernel.org/r/20230725033318.8361-2-stanley_chang@realtek.com
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+Bug: 286930662
+(cherry picked from commit 134e6d25f6bd06071e5aac0a7eefcea6f7713955
+git: //git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git usb-next)
+Change-Id: Ia558a759e5bb288bc368335516863738e29bc142
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+---
+ drivers/phy/Kconfig                |    1 +
+ drivers/phy/Makefile               |    1 +
+ 2 files changed, 1345 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/phy/realtek/phy-rtk-usb2.c
+
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index c9d836063275..dcbd15c0403c 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -85,6 +85,7 @@ source "drivers/phy/motorola/Kconfig"
+ source "drivers/phy/mscc/Kconfig"
+ source "drivers/phy/qualcomm/Kconfig"
+ source "drivers/phy/ralink/Kconfig"
++source "drivers/phy/realtek/Kconfig"
+ source "drivers/phy/renesas/Kconfig"
+ source "drivers/phy/rockchip/Kconfig"
+ source "drivers/phy/samsung/Kconfig"
+diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+index 13b4c3807aa2..ee16ac5e442f 100644
+--- a/drivers/phy/Makefile
++++ b/drivers/phy/Makefile
+@@ -27,6 +27,7 @@ obj-y					+= allwinner/	\
+ 					   mscc/	\
+ 					   qualcomm/	\
+ 					   ralink/	\
++					   realtek/	\
+ 					   renesas/	\
+ 					   rockchip/	\
+ 					   samsung/	\
+-- 
+2.42.0
+

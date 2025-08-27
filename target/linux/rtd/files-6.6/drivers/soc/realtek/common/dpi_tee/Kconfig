@@ -1,0 +1,6 @@
+config RTK_DPI_TEE
+	tristate "Realtek DPI TEE driver"
+	depends on REALTEK_TEE
+	default y
+	help
+	  This enables Realtek DPI TEE driver

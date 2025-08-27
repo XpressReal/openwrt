@@ -1,0 +1,121 @@
+From c2393f6c1f30dc7c6ae3e9f3123f84dcad09308c Mon Sep 17 00:00:00 2001
+From: yaozenhu <yaozenhu@realtek.com>
+Date: Mon, 3 Jun 2024 14:44:30 +0800
+Subject: [PATCH] fix available buffer update
+
+---
+ sound/soc/realtek/common/snd-hifi-realtek.c | 39 +++++++++++++++++++++
+ sound/soc/realtek/common/snd-hifi-realtek.h |  3 ++
+ 2 files changed, 42 insertions(+)
+
+diff --git a/sound/soc/realtek/common/snd-hifi-realtek.c b/sound/soc/realtek/common/snd-hifi-realtek.c
+index 562427881d41..7c22c836e833 100644
+--- a/sound/soc/realtek/common/snd-hifi-realtek.c
++++ b/sound/soc/realtek/common/snd-hifi-realtek.c
+@@ -71,6 +71,7 @@ static void snd_card_capture_setup_pts(struct snd_pcm_runtime *runtime,
+ static int rtk_snd_capture_hdmirx_enable(void);
+ static void rtk_snd_capture_handle_HDMI_plug_out(struct snd_pcm_substream *substream);
+ 
++static enum hrtimer_restart snd_card_timer_function(struct hrtimer *timer);
+ static void rtk_playback_realtime_function(struct snd_pcm_runtime *runtime);
+ static enum hrtimer_restart rtk_capture_timer_function(struct hrtimer *timer);
+ static void snd_card_capture_calculate_pts(struct snd_pcm_runtime *runtime,
+@@ -1700,6 +1701,10 @@ static int snd_card_playback_open(struct snd_pcm_substream *substream)
+ 
+ 	dpcm->mixer = (struct rtk_snd_mixer *)(substream->pcm->card->private_data);
+ 
++	// init hr timer
++	hrtimer_init(&dpcm->hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	dpcm->hr_timer.function = &snd_card_timer_function;
++
+ 	/* init dec_out_msec */
+ 	dpcm->dec_out_msec = 0;
+ 
+@@ -2041,6 +2046,22 @@ static int snd_card_capture_close(struct snd_pcm_substream *substream)
+ 	return ret;
+ }
+ 
++static enum hrtimer_restart snd_card_timer_function(struct hrtimer *timer)
++{
++	struct snd_rtk_pcm *dpcm =
++		container_of(timer, struct snd_rtk_pcm, hr_timer);
++	struct snd_pcm_substream *substream = dpcm->substream;
++
++	if (dpcm->enHRTimer == HRTIMER_RESTART) {
++		snd_pcm_period_elapsed(substream);
++		/* Set up the next time */
++		hrtimer_forward_now(timer, dpcm->ktime);
++		return HRTIMER_RESTART;
++	} else {
++		return HRTIMER_NORESTART;
++	}
++}
++
+ static int snd_card_playback_ack(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_pcm_runtime *runtime = substream->runtime;
+@@ -2061,6 +2082,7 @@ static int snd_card_playback_close(struct snd_pcm_substream *substream)
+ 	phys_addr_t dat;
+ 	void *vaddr;
+ 	size_t size;
++	ktime_t remaining;
+ 
+ 	pr_info("[ALSA %s %d]\n", __func__, __LINE__);
+ 
+@@ -2113,6 +2135,17 @@ static int snd_card_playback_close(struct snd_pcm_substream *substream)
+ 		filp_close(dpcm->fp, NULL);
+ #endif
+ 
++	/* destroy the hr timer */
++	remaining = hrtimer_get_remaining(&dpcm->hr_timer);
++	if (ktime_to_ns(remaining) > 0)
++		ndelay(ktime_to_ns(remaining));
++
++	ret = hrtimer_cancel(&dpcm->hr_timer);
++	if (ret) {
++		pr_err("The timer still alive...\n");
++		goto exit;
++	}
++
+ exit:
+ 	rpc_release_ao_flash_pin(dpcm->phy_addr_rpc,
+ 				 dpcm->vaddr_rpc,
+@@ -2577,6 +2610,8 @@ static int snd_card_playback_prepare(struct snd_pcm_substream *substream)
+ 		       (int)runtime->status->hw_ptr);
+ 	}
+ 
++	dpcm->ktime = ktime_set(0, (runtime->period_size * 1000) * 1000 / runtime->rate * 1000);
++
+ 	if (dpcm->init_ring) {
+ 		/* Reset the ptr about playback.
+ 		 * prehw_ptr will influence the next ptr update in timer function.
+@@ -3148,8 +3183,12 @@ static int snd_card_playback_trigger(struct snd_pcm_substream *substream, int cm
+ 
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_STOP:
++		dpcm->enHRTimer = HRTIMER_NORESTART;
++		hrtimer_try_to_cancel(&dpcm->hr_timer);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_START:
++		dpcm->enHRTimer = HRTIMER_RESTART;
++		hrtimer_start(&dpcm->hr_timer, dpcm->ktime, HRTIMER_MODE_REL);
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+ 		break;
+diff --git a/sound/soc/realtek/common/snd-hifi-realtek.h b/sound/soc/realtek/common/snd-hifi-realtek.h
+index c6b7cbf5900d..636e97c00147 100644
+--- a/sound/soc/realtek/common/snd-hifi-realtek.h
++++ b/sound/soc/realtek/common/snd-hifi-realtek.h
+@@ -413,6 +413,9 @@ struct snd_rtk_pcm {
+ 	mm_segment_t fs;
+ #endif
+ 
++	struct hrtimer hr_timer;           /* Hr timer for playback */
++	enum hrtimer_restart enHRTimer;    /* Hr timer state */
++	ktime_t ktime;                     /* Ktime for hr timer */
+ 	int dec_agent_id;
+ 	int dec_pin_id;
+ 	int ao_agent_id;
+-- 
+2.34.1
+

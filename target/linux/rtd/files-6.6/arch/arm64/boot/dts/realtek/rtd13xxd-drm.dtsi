@@ -1,0 +1,59 @@
+/* PLEASE include this file inside a node */
+/ {
+	display_subsystem: display-subsystem {
+		compatible = "realtek,display-subsystem";
+		ports = <&vo_out>;
+		realtek,krpc-agent = <&acpu_kernel_agent>, <&hifi_kernel_agent>;
+		status = "disabled";
+	};
+
+	vo: vo@98080000 {
+		compatible = "realtek,crtc";
+		reg = <0x98080000 0x2000>;
+		interrupts = <0 33 4>;
+		hwlocks = <&sb2_lock5 1>;
+		vo_out: port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			vo_hdmi: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&hdmi_vo>;
+			};
+			vo_cvbs: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&cvbs_vo>;
+			};
+		};
+	};
+
+	hdmi: hdmi {
+		compatible = "realtek,rtk-hdmi";
+		realtek,krpc-agent = <&acpu_kernel_agent>;
+		syscon = <&hdmi_tx>, <&crt>, <&hdmi_top>;
+		clocks = <&cc RTD1319D_CRT_CLK_EN_HDMI>;
+		clock-names = "clk_en_hdmi";
+		resets = <&cc RTD1319D_CRT_RSTN_HDMI>;
+		reset-names = "rstn_hdmi";
+		hdmi5v-gpios = <&gpio 5 GPIO_ACTIVE_HIGH>;
+		hpd-gpios = <&gpio 7 GPIO_PULL_DOWN>;
+		interrupts = <0 31 4>; /* RxSense */
+		rxsense-mode = <2>;
+		is-new-mac = <0>; /* 1: syscon hdmi_tx -> hdmi_tx_new */
+		hdcp = <2>;
+		hdmi_in: port {
+			hdmi_vo: endpoint {
+				remote-endpoint = <&vo_hdmi>;
+			};
+		};
+	};
+
+	cvbs: cvbs@9804D140 {
+		compatible = "realtek,rtk-cvbs";
+		reg = <0x9804D140 0x18>;
+		cvbs_in: port {
+			cvbs_vo: endpoint {
+				remote-endpoint = <&vo_cvbs>;
+			};
+		};
+	};
+};

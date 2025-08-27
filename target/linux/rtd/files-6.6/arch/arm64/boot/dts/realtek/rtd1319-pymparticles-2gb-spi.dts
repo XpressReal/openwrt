@@ -1,0 +1,57 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2019-2020 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include "rtd1319-pymparticles.dtsi"
+
+/ {
+	compatible = "realtek,pym-particles-spi", "realtek,rtd1319";
+	model = "Realtek Pym Particles EVB SPI (2GB)";
+
+	memory@40000 {
+		device_type = "memory";
+		reg = <0x00040000 0x7ffc0000>; /* 2 GiB */
+	};
+};
+
+&emmc {
+	status = "disabled";
+};
+
+&sfc {
+	status = "okay";
+};
+
+&pcie {
+	status = "disabled";
+};
+
+&pcie1 {
+	perst-gpios = <&gpio 2 GPIO_ACTIVE_HIGH>;
+	status = "disabled";
+};
+
+&pcie2 {
+	perst-gpios = <&gpio 3 GPIO_ACTIVE_HIGH>;
+	workaround = <1>;
+	status = "okay";
+};
+
+&pcie_trans {
+	status = "okay";
+};
+
+&sata_port0 {
+	sata-gpios = <&gpio 2 GPIO_ACTIVE_HIGH>;
+};
+
+&sata_port1 {
+	sata-gpios = <&gpio 3 GPIO_ACTIVE_HIGH>;
+};
+
+&rfkill {
+	status = "okay";
+};

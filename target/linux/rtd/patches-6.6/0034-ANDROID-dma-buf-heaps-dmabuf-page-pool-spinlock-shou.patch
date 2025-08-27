@@ -1,0 +1,34 @@
+From 48ad6de4ce7be5e426d0a68acf118b0fdac785c1 Mon Sep 17 00:00:00 2001
+From: "T.J. Mercier" <tjmercier@google.com>
+Date: Wed, 12 Apr 2023 22:36:56 +0000
+Subject: [PATCH 34/35] ANDROID: dma-buf: heaps: dmabuf page pool spinlock
+ should be spinlock_t
+
+Address checkpatch warning:
+WARNING: struct spinlock should be spinlock_t
++	struct spinlock lock;
+
+Fixes: 2977891dfd4a ("ANDROID: dma-buf: heaps: replace mutex lock with spinlock")
+Bug: 275698445
+Change-Id: I6f2fc7c5ec4bc56a43e8fa738577cb4b64cfcb3e
+Signed-off-by: T.J. Mercier <tjmercier@google.com>
+---
+ drivers/dma-buf/heaps/page_pool.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma-buf/heaps/page_pool.c b/drivers/dma-buf/heaps/page_pool.c
+index b2d7aa5a9214..56e6a6f032b7 100644
+--- a/drivers/dma-buf/heaps/page_pool.c
++++ b/drivers/dma-buf/heaps/page_pool.c
+@@ -39,7 +39,7 @@ enum {
+ struct dmabuf_page_pool {
+ 	int count[POOL_TYPE_SIZE];
+ 	struct list_head items[POOL_TYPE_SIZE];
+-	struct spinlock lock;
++	spinlock_t lock;
+ 	gfp_t gfp_mask;
+ 	unsigned int order;
+ 	struct list_head list;
+-- 
+2.45.2
+

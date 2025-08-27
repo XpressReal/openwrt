@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2020-2022 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include "rtd1315c-arcreactor.dtsi"
+
+/ {
+	compatible = "realtek,badassium", "realtek,rtd1315c";
+	model = "Realtek Badassium EVB (2GB LPDDR4)";
+
+	memory@40000 {
+		device_type = "memory";
+		reg = <0x00040000 0x7ffc0000>; /* 2 GB */
+	};
+};
+
+&pcie1 {
+	status = "disabled";
+};
+
+&pcie1_phy {
+	status = "disabled";
+};
+
+&sd {
+	status = "disabled";
+};
+
+&sdio {
+	status = "okay";
+};
+
+&lsadc {
+	status = "disabled";
+};
+
+&gpio_manager {
+	default-gpios = <&gpio 27 GPIO_ACTIVE_LOW>;
+	default-gpios-state = <1>;
+	change-gpios = <&gpio 27 GPIO_ACTIVE_HIGH>;
+	change-gpios-value = <0>;
+	status = "okay";
+};

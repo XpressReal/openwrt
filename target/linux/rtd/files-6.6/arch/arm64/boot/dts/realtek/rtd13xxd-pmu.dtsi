@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: <SPDX License Expression>
+&dbus_pmu {
+	status = "disabled";
+	overflow = <1>;
+
+	dbus_sysh: dbus_sysh {
+		compatible = "dbus-sysh";
+		has_ext = <1>;
+		ext_info = <0x778>;
+	};
+};
+
+&ddrc_pmu {
+	status = "disabled";
+	overflow = <1>;
+};
+
+&ddrc_tfc_pmu {
+	status = "disabled";
+	overflow = <1>;
+};
+
+&rbus_pmu {
+	status = "disabled";
+	overflow = <1>;
+};
+
+&rxi316_pmu {
+	status = "disabled";
+};

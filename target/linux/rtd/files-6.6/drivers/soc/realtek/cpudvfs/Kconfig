@@ -1,0 +1,38 @@
+menu "Realtek CPU DVFS Related Drivers"
+
+config RTK_BSV_CTRL
+	tristate "Realtek BSV Controller for CPU DVFS"
+	depends on COMMON_CLK && REGULATOR
+	default n
+        help
+          This driver provides CPU voltage conversion based on input
+	  frequency if BSV OTP is valid. The voltage would be set simultaneously
+	  when clk frequency is set.  If not sure, say N.
+
+config RTK_CPU_VOLT_SEL
+	tristate "Add OPP prop extn to CPU device"
+	depends on PM_OPP
+	default y
+	help
+	  This helps to set OPP prop extn to CPU devices based on additional
+	  information for Realtek platform. If not sure, say Y.
+
+config RTK_FSS_SCAN
+	tristate "Realtek FSS Scan Driver"
+	depends on RTK_FSS
+	default n
+	help
+	  This driver provides control to run fss scan in userspace.
+	  a CPU frequency/voltage pair would be set, and the driver would check
+	  speed paraments from fss sensor and determine the voltage is suitable
+	  to be used or not. If not sure, say N.
+
+config RTK_VSFC_CTRL
+	tristate "Realtek VSFC Controller"
+	depends on COMMON_CLK && REGULATOR
+	default n
+	help
+	  This enables Realtek VSFC controller with NWC control.
+	  If not sure, say N.
+
+endmenu

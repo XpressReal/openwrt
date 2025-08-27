@@ -1,0 +1,60 @@
+From b498aa20d7af6d1721ffdfff8f13a09613c897a6 Mon Sep 17 00:00:00 2001
+From: Hridya Valsaraju <hridya@google.com>
+Date: Mon, 21 Dec 2020 11:36:46 -0800
+Subject: [PATCH 14/35] ANDROID: dma-buf: heaps: Allow the DMA-BUF system heap
+ to be a module
+
+This patch sets CONFIG_DMABUF_HEAPS_SYSTEM to tristate and exports the
+symbol dma_heap_get_dev() to allow the DMA-BUF system heap to be a
+module.
+
+This change is intended to allow partners to continue using
+device/SoC-specific optimizations in their system heap implementations
+when they switch from ION to DMA-BUF heaps. The ION system heap was
+built-in and partners were asked to override the system heap ID with
+their own if they wanted to override the GKI system heap. This
+per-vendor approach to override system heap will no longer be possible
+with DMA-BUF heaps since Android S aims to restrict framework access to
+DMA-BUF vendor heaps by only letting it access ABI-defined vendor heaps.
+
+VTS tests will be created to ensure that the system heap is present
+at /dev/dma_heap/system and behaves as expected of the system heap.
+
+Bug: 175697666
+Bug: 155218010
+Bug: 172527615
+Change-Id: Iabb24d9aedde308a9b15509781dd0e6b67353e99
+Signed-off-by: Hridya Valsaraju <hridya@google.com>
+(cherry picked from commit c975699b4953ea3251695c16ef65ecb722c91188)
+Signed-off-by: Palmer Dabbelt <palmerdabbelt@google.com>
+---
+ drivers/dma-buf/dma-heap.c    | 1 +
+ drivers/dma-buf/heaps/Kconfig | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/dma-buf/dma-heap.c b/drivers/dma-buf/dma-heap.c
+index 5d3792439bc7..ecf4ff198a1c 100644
+--- a/drivers/dma-buf/dma-heap.c
++++ b/drivers/dma-buf/dma-heap.c
+@@ -303,6 +303,7 @@ struct device *dma_heap_get_dev(struct dma_heap *heap)
+ {
+ 	return heap->heap_dev;
+ }
++EXPORT_SYMBOL_GPL(dma_heap_get_dev);
+ 
+ struct dma_heap *dma_heap_add(const struct dma_heap_export_info *exp_info)
+ {
+diff --git a/drivers/dma-buf/heaps/Kconfig b/drivers/dma-buf/heaps/Kconfig
+index aed0b9b4febf..e273fb18feca 100644
+--- a/drivers/dma-buf/heaps/Kconfig
++++ b/drivers/dma-buf/heaps/Kconfig
+@@ -1,5 +1,5 @@
+ config DMABUF_HEAPS_SYSTEM
+-	bool "DMA-BUF System Heap"
++	tristate "DMA-BUF System Heap"
+ 	depends on DMABUF_HEAPS
+ 	help
+ 	  Choose this option to enable the system dmabuf heap. The system heap
+-- 
+2.45.2
+

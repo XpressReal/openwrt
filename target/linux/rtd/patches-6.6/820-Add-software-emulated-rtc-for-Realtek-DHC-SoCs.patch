@@ -1,0 +1,42 @@
+From cac342d01182312c32b1ed2b503d80ccd829540f Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Mon, 14 Nov 2022 16:38:41 +0800
+Subject: [PATCH] rtc: add software-emulated rtc for Realtek DHC SoCs
+
+Change-Id: I74de42a1aef2edc7f8edbfb1d11a3619d56d6145
+---
+ drivers/rtc/Kconfig      |   8 ++
+ drivers/rtc/Makefile     |   1 +
+ 2 files changed, 231 insertions(+)
+
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 51d61467aa98..7f7a140b12d3 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -1321,6 +1321,14 @@ config RTC_DRV_RTK
+ 	help
+ 	  Realtek RTC support.
+ 
++config RTC_DRV_RTK_SW
++	tristate "Realtek Software-emulated RTC"
++	help
++	  This enable Realtek Software-emulated RTC driver, and
++	  device.
++
++	  If not sure, say N.
++
+ comment "on-CPU RTC drivers"
+ 
+ config RTC_DRV_ASM9260
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 1e3a2c7dc8e1..daac0e5b8b47 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -181,3 +181,4 @@ obj-$(CONFIG_RTC_DRV_X1205)	+= rtc-x1205.o
+ obj-$(CONFIG_RTC_DRV_XGENE)	+= rtc-xgene.o
+ obj-$(CONFIG_RTC_DRV_ZYNQMP)	+= rtc-zynqmp.o
+ obj-$(CONFIG_RTC_DRV_RTK)	+= rtc-rtk.o
++obj-$(CONFIG_RTC_DRV_RTK_SW)	+= rtc-rtk-sw.o
+-- 
+2.42.0
+

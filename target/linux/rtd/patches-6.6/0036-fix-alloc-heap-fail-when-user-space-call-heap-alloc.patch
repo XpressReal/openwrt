@@ -1,0 +1,44 @@
+From 8de0c2deb441e7dfaa3fff1ec2e0a589831614ea Mon Sep 17 00:00:00 2001
+From: yaozenhu <yaozenhu@realtek.com>
+Date: Thu, 17 Oct 2024 09:20:25 +0800
+Subject: [PATCH] fix alloc heap fail when user space call heap alloc
+
+---
+ drivers/dma-buf/dma-heap.c | 14 +-------------
+ 1 file changed, 1 insertion(+), 13 deletions(-)
+
+diff --git a/drivers/dma-buf/dma-heap.c b/drivers/dma-buf/dma-heap.c
+index 3c769d47dda0..0fc00905fceb 100644
+--- a/drivers/dma-buf/dma-heap.c
++++ b/drivers/dma-buf/dma-heap.c
+@@ -80,9 +80,6 @@ struct dma_buf *dma_heap_buffer_alloc(struct dma_heap *heap, size_t len,
+ 				      unsigned int fd_flags,
+ 				      unsigned int heap_flags)
+ {
+-	struct dma_buf *dmabuf;
+-	int fd;
+-
+ 	if (fd_flags & ~DMA_HEAP_VALID_FD_FLAGS)
+ 		return ERR_PTR(-EINVAL);
+ 
+@@ -96,16 +93,7 @@ struct dma_buf *dma_heap_buffer_alloc(struct dma_heap *heap, size_t len,
+ 	if (!len)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	dmabuf = heap->ops->allocate(heap, len, fd_flags, heap_flags);
+-	if (IS_ERR(dmabuf))
+-		return PTR_ERR(dmabuf);
+-
+-	fd = dma_buf_fd(dmabuf, fd_flags);
+-	if (fd < 0) {
+-		dma_buf_put(dmabuf);
+-		/* just return, as put will call release and that will free */
+-	}
+-	return fd;
++	return heap->ops->allocate(heap, len, fd_flags, heap_flags);
+ }
+ EXPORT_SYMBOL_GPL(dma_heap_buffer_alloc);
+ 
+-- 
+2.34.1
+

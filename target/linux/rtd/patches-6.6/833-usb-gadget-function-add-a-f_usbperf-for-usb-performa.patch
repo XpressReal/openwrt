@@ -1,0 +1,61 @@
+From a0180d7e4bd85b175ef968228ff0f4319edf4217 Mon Sep 17 00:00:00 2001
+From: Stanley Chang <stanley_chang@realtek.com>
+Date: Wed, 17 Jan 2024 18:39:54 +0800
+Subject: [PATCH] usb: gadget: function: add a f_usbperf for usb performance
+ test
+
+[Information]
+f_usbperf is an usb gadget function for usb performance testing.
+
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+Change-Id: Icc0b05a9e05684dd24e2b3866c46e8e81763387c
+---
+ drivers/usb/gadget/Kconfig           | 14 ++++++++++++++
+ drivers/usb/gadget/function/Makefile |  2 ++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index b3592bcb0f96..f01e9b6b2ad2 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -220,6 +220,9 @@ config USB_F_PRINTER
+ config USB_F_TCM
+ 	tristate
+ 
++config USB_F_USBPERF
++	tristate
++
+ # this first set of drivers all depend on bulk-capable hardware.
+ 
+ config USB_CONFIGFS
+@@ -505,6 +508,17 @@ config USB_CONFIGFS_F_TCM
+ 	  Both protocols can work on USB2.0 and USB3.0.
+ 	  UAS utilizes the USB 3.0 feature called streams support.
+ 
++config USB_CONFIGFS_F_USBPERF
++	bool "USB performance testing function"
++	depends on USB_CONFIGFS
++	select USB_F_USBPERF
++	help
++	  USB performance testing function included bulk, iso endpoints.
++	  Make this be the testing driver you try using on top of any new
++	  USB peripheral controller driver. Then you can use host-side
++	  test software, like the "usbperf" driver, to put your hardware
++	  and its driver through a based performance tests.
++
+ source "drivers/usb/gadget/legacy/Kconfig"
+ 
+ endif # USB_GADGET
+diff --git a/drivers/usb/gadget/function/Makefile b/drivers/usb/gadget/function/Makefile
+index 87917a7d4a9b..1c781fdf5ed7 100644
+--- a/drivers/usb/gadget/function/Makefile
++++ b/drivers/usb/gadget/function/Makefile
+@@ -52,3 +52,5 @@ usb_f_printer-y			:= f_printer.o
+ obj-$(CONFIG_USB_F_PRINTER)	+= usb_f_printer.o
+ usb_f_tcm-y			:= f_tcm.o
+ obj-$(CONFIG_USB_F_TCM)		+= usb_f_tcm.o
++usb_f_usbperf-y			:= f_usbperf.o
++obj-$(CONFIG_USB_F_USBPERF)	+= usb_f_usbperf.o
+-- 
+2.45.2
+

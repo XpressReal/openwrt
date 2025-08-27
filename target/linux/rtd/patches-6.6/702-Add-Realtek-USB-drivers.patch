@@ -1,0 +1,13 @@
+diff --git a/drivers/net/usb/Makefile b/drivers/net/usb/Makefile
+index 4964f7b326fb..b5408f8daee3 100644
+--- a/drivers/net/usb/Makefile
++++ b/drivers/net/usb/Makefile
+@@ -7,7 +7,7 @@ obj-$(CONFIG_USB_CATC)		+= catc.o
+ obj-$(CONFIG_USB_KAWETH)	+= kaweth.o
+ obj-$(CONFIG_USB_PEGASUS)	+= pegasus.o
+ obj-$(CONFIG_USB_RTL8150)	+= rtl8150.o
+-obj-$(CONFIG_USB_RTL8152)	+= r8152.o
++obj-$(CONFIG_USB_RTL8152)	+= r8152/
+ obj-$(CONFIG_USB_HSO)		+= hso.o
+ obj-$(CONFIG_USB_LAN78XX)	+= lan78xx.o
+ obj-$(CONFIG_USB_NET_AX8817X)	+= asix.o

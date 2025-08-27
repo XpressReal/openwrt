@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config RTK_SW_SYNC
+	tristate "Buffer sync for Realtek DHC SoCs"
+	default n
+	depends on SYNC_FILE
+	help
+	  A sync object driver that uses a 32bit counter to coordinate
+	  synchronization.  Useful when there is no hardware primitive backing
+	  the synchronization.
+
+	  WARNING: improper use of this can result in deadlocking kernel
+	  drivers from userspace. Intended for test and debug only.

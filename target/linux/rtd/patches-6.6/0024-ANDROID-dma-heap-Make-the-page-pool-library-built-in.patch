@@ -1,0 +1,37 @@
+From 9c5c87245e043cde7a14ed0384855a42c3d65fe0 Mon Sep 17 00:00:00 2001
+From: Hridya Valsaraju <hridya@google.com>
+Date: Thu, 30 Dec 2021 16:45:24 -0800
+Subject: [PATCH 24/35] ANDROID: dma-heap: Make the page-pool library built-in
+
+Since vendors might depend on them for their system heap
+implementations, make the page-pool library built-in to
+freeze its KMI.
+
+Bug: 183902174
+Bug: 212210831
+Change-Id: If633619ec1f78d0fbd73c43c48b19d98db7807af
+Signed-off-by: Hridya Valsaraju <hridya@google.com>
+---
+ drivers/dma-buf/heaps/Kconfig | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/Kconfig b/drivers/dma-buf/heaps/Kconfig
+index 054edea30387..c90fdb97a352 100644
+--- a/drivers/dma-buf/heaps/Kconfig
++++ b/drivers/dma-buf/heaps/Kconfig
+@@ -3,8 +3,10 @@ menuconfig DMABUF_HEAPS_DEFERRED_FREE
+ 	help
+ 	  Choose this option to enable the DMA-BUF heaps deferred-free library.
+ 
+-config DMABUF_HEAPS_PAGE_POOL
+-	tristate
++menuconfig DMABUF_HEAPS_PAGE_POOL
++	bool "DMA-BUF heaps page-pool library"
++	help
++	  Choose this option to enable the DMA-BUF heaps page-pool library.
+ 
+ config DMABUF_HEAPS_SYSTEM
+ 	tristate "DMA-BUF System Heap"
+-- 
+2.45.2
+

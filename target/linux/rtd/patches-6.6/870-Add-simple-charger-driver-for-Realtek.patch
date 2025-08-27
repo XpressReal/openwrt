@@ -1,0 +1,38 @@
+From 579294a5540cd9a65b7d7bb56acfcca4a6f44832 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Mon, 14 Nov 2022 16:52:13 +0800
+Subject: [PATCH] power: supply: Add simple charger driver for Realtek DHC SoCs
+
+Change-Id: I69648f9d85002665c4335c5da909fe60014c61f8
+---
+ drivers/power/supply/Kconfig      |  5 ++
+ drivers/power/supply/Makefile     |  1 +
+ 2 files changed, 88 insertions(+)
+ create mode 100644 drivers/power/supply/rtd1xxx_ac.c
+
+diff --git a/drivers/power/supply/Kconfig b/drivers/power/supply/Kconfig
+index fcc7534edcb2..899182a11f9d 100644
+--- a/drivers/power/supply/Kconfig
++++ b/drivers/power/supply/Kconfig
+@@ -849,4 +849,9 @@ config CHARGER_SURFACE
+ 	  Microsoft Surface devices, i.e. Surface Pro 7, Surface Laptop 3,
+ 	  Surface Book 3, and Surface Laptop Go.
+ 
++config CHARGER_RTD1XXX
++	tristate "Simple charger driver for Realtek DHC SoCs"
++	help
++	  Simple charger driver for Realtek DHC SoCs.
++
+ endif # POWER_SUPPLY
+diff --git a/drivers/power/supply/Makefile b/drivers/power/supply/Makefile
+index 4e55a11aab79..8610d6242a6e 100644
+--- a/drivers/power/supply/Makefile
++++ b/drivers/power/supply/Makefile
+@@ -104,3 +104,4 @@ obj-$(CONFIG_RN5T618_POWER)	+= rn5t618_power.o
+ obj-$(CONFIG_BATTERY_ACER_A500)	+= acer_a500_battery.o
+ obj-$(CONFIG_BATTERY_SURFACE)	+= surface_battery.o
+ obj-$(CONFIG_CHARGER_SURFACE)	+= surface_charger.o
++obj-$(CONFIG_CHARGER_RTD1XXX)	+= rtd1xxx_ac.o
+-- 
+2.42.0
+

@@ -1,0 +1,150 @@
+From 2a7ab7a38b8b731e8ea21c99a190bdd0902dbe60 Mon Sep 17 00:00:00 2001
+From: Hridya Valsaraju <hridya@google.com>
+Date: Sun, 31 Jan 2021 20:38:27 -0800
+Subject: [PATCH 32/35] ANDROID: dma-buf: heaps: Add a sysfs file to report
+ total pool size.
+
+In order to help with memory accounting, expose the total pool size of
+all DMA-BUF heaps at /sys/kernel/dma_heap/total_pools_kb.
+
+This information will be exposed as part of Android Bugreport[1].
+
+[1]: https://android-review.googlesource.com/q/topic:%22b%252F167709539%22+(status:open%20OR%20status:merged)
+
+Bug: 167709539
+Bug: 275698445
+Change-Id: I6a1b52517e73103122690f6567f4f295db9ca1ad
+Signed-off-by: Hridya Valsaraju <hridya@google.com>
+Signed-off-by: T.J. Mercier <tjmercier@google.com>
+---
+ .../ABI/testing/sysfs-kernel-dmaheap          |  7 ++
+ drivers/dma-buf/dma-heap.c                    | 66 ++++++++++++++++++-
+ include/linux/dma-heap.h                      |  2 +
+ 3 files changed, 72 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-dmaheap
+
+diff --git a/Documentation/ABI/testing/sysfs-kernel-dmaheap b/Documentation/ABI/testing/sysfs-kernel-dmaheap
+new file mode 100644
+index 000000000000..0fd7126bf97d
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-kernel-dmaheap
+@@ -0,0 +1,7 @@
++What:		/sys/kernel/dma_heap/total_pools_kb
++Date:		Feb 2021
++KernelVersion:	5.10
++Contact:	T.J. Mercier <tjmercier@google.com>
++Description:
++		The total_pools_kb file is read-only and specifies how much
++		memory in KiB is allocated to DMA-BUF heap pools.
+diff --git a/drivers/dma-buf/dma-heap.c b/drivers/dma-buf/dma-heap.c
+index e16cfc9b664d..3c769d47dda0 100644
+--- a/drivers/dma-buf/dma-heap.c
++++ b/drivers/dma-buf/dma-heap.c
+@@ -399,21 +399,81 @@ static char *dma_heap_devnode(const struct device *dev, umode_t *mode)
+ 	return kasprintf(GFP_KERNEL, "dma_heap/%s", dev_name(dev));
+ }
+ 
++static ssize_t total_pools_kb_show(struct kobject *kobj,
++				   struct kobj_attribute *attr, char *buf)
++{
++	struct dma_heap *heap;
++	u64 total_pool_size = 0;
++
++	mutex_lock(&heap_list_lock);
++	list_for_each_entry(heap, &heap_list, list) {
++		if (heap->ops->get_pool_size)
++			total_pool_size += heap->ops->get_pool_size(heap);
++	}
++	mutex_unlock(&heap_list_lock);
++
++	return sysfs_emit(buf, "%llu\n", total_pool_size / 1024);
++}
++
++static struct kobj_attribute total_pools_kb_attr =
++	__ATTR_RO(total_pools_kb);
++
++static struct attribute *dma_heap_sysfs_attrs[] = {
++	&total_pools_kb_attr.attr,
++	NULL,
++};
++
++ATTRIBUTE_GROUPS(dma_heap_sysfs);
++
++static struct kobject *dma_heap_kobject;
++
++static int dma_heap_sysfs_setup(void)
++{
++	int ret;
++
++	dma_heap_kobject = kobject_create_and_add("dma_heap", kernel_kobj);
++	if (!dma_heap_kobject)
++		return -ENOMEM;
++
++	ret = sysfs_create_groups(dma_heap_kobject, dma_heap_sysfs_groups);
++	if (ret) {
++		kobject_put(dma_heap_kobject);
++		return ret;
++	}
++
++	return 0;
++}
++
++static void dma_heap_sysfs_teardown(void)
++{
++	kobject_put(dma_heap_kobject);
++}
++
+ static int dma_heap_init(void)
+ {
+ 	int ret;
+ 
+-	ret = alloc_chrdev_region(&dma_heap_devt, 0, NUM_HEAP_MINORS, DEVNAME);
++	ret = dma_heap_sysfs_setup();
+ 	if (ret)
+ 		return ret;
+ 
++	ret = alloc_chrdev_region(&dma_heap_devt, 0, NUM_HEAP_MINORS, DEVNAME);
++	if (ret)
++		goto err_chrdev;
++
+ 	dma_heap_class = class_create(DEVNAME);
+ 	if (IS_ERR(dma_heap_class)) {
+-		unregister_chrdev_region(dma_heap_devt, NUM_HEAP_MINORS);
+-		return PTR_ERR(dma_heap_class);
++		ret = PTR_ERR(dma_heap_class);
++		goto err_class;
+ 	}
+ 	dma_heap_class->devnode = dma_heap_devnode;
+ 
+ 	return 0;
++
++err_class:
++	unregister_chrdev_region(dma_heap_devt, NUM_HEAP_MINORS);
++err_chrdev:
++	dma_heap_sysfs_teardown();
++	return ret;
+ }
+ subsys_initcall(dma_heap_init);
+diff --git a/include/linux/dma-heap.h b/include/linux/dma-heap.h
+index ab90c8f4e51f..ab5e76299d13 100644
+--- a/include/linux/dma-heap.h
++++ b/include/linux/dma-heap.h
+@@ -17,6 +17,7 @@ struct dma_heap;
+ /**
+  * struct dma_heap_ops - ops to operate on a given heap
+  * @allocate:		allocate dmabuf and return struct dma_buf ptr
++ * @get_pool_size:	if heap maintains memory pools, get pool size in bytes
+  *
+  * allocate returns dmabuf on success, ERR_PTR(-errno) on error.
+  */
+@@ -25,6 +26,7 @@ struct dma_heap_ops {
+ 				    unsigned long len,
+ 				    unsigned long fd_flags,
+ 				    unsigned long heap_flags);
++	long (*get_pool_size)(struct dma_heap *heap);
+ };
+ 
+ /**
+-- 
+2.45.2
+

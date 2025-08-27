@@ -1,0 +1,45 @@
+From 620396bca86369d7b4a86e4d26b827c64dba6b08 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Wed, 16 Nov 2022 22:16:41 +0800
+Subject: [PATCH] iio: adc: add lsadc driver for Realtek DHC SoCs
+
+Change-Id: If9a2eb86659d2617fee9b82fcfed404e7982ea74
+---
+ drivers/iio/adc/Kconfig  | 8 ++++++++
+ drivers/iio/adc/Makefile | 1 +
+ 2 files changed, 9 insertions(+)
+
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index dfb925cfe38e..0c5597b0c667 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -849,6 +849,14 @@ config MESON_SARADC
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called meson_saradc.
+ 
++config RTK_LSADC0
++	tristate "Realtek LSADC driver"
++	depends on ARCH_REALTEK
++	default n
++	help
++	  Say Y, if you want to enable LSADC feature on Realtek RTD129x,
++	  RTD139x, RTD16xx, RTD13xx, or RTD16xxb platform.
++
+ config MP2629_ADC
+ 	tristate "Monolithic MP2629 ADC driver"
+ 	depends on MFD_MP2629
+diff --git a/drivers/iio/adc/Makefile b/drivers/iio/adc/Makefile
+index 2facf979327d..ef96b8c24bdd 100644
+--- a/drivers/iio/adc/Makefile
++++ b/drivers/iio/adc/Makefile
+@@ -91,6 +91,7 @@ obj-$(CONFIG_QCOM_PM8XXX_XOADC) += qcom-pm8xxx-xoadc.o
+ obj-$(CONFIG_RCAR_GYRO_ADC) += rcar-gyroadc.o
+ obj-$(CONFIG_RN5T618_ADC) += rn5t618-adc.o
+ obj-$(CONFIG_ROCKCHIP_SARADC) += rockchip_saradc.o
++obj-$(CONFIG_RTK_LSADC0) += rtk_lsadc0.o
+ obj-$(CONFIG_RICHTEK_RTQ6056) += rtq6056.o
+ obj-$(CONFIG_RZG2L_ADC) += rzg2l_adc.o
+ obj-$(CONFIG_SC27XX_ADC) += sc27xx_adc.o
+-- 
+2.45.2
+

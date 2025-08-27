@@ -1,0 +1,43 @@
+From 8cf0031f24ad87966c4483b237be8cce73472e7c Mon Sep 17 00:00:00 2001
+From: Greg Kroah-Hartman <gregkh@google.com>
+Date: Mon, 15 Nov 2021 17:37:35 +0100
+Subject: [PATCH 17/35] ANDROID: add dma-buf namespace to system_heap.c &
+ cma_heap.c
+
+Commit 16b0314aa746 ("dma-buf: move dma-buf symbols into the DMA_BUF
+module namespace") moved the dma-buf exports into the DMA_BUF namespace.
+To keep the system_heap.c and cma_heap modules building, add them to the
+DMA_BUF namespace as well.
+
+Fixes: 16b0314aa746 ("dma-buf: move dma-buf symbols into the DMA_BUF module namespace")
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@google.com>
+Change-Id: Ib69062d41c426844f82667a51d75f0c35bad2bdf
+---
+ drivers/dma-buf/heaps/cma_heap.c    | 2 ++
+ drivers/dma-buf/heaps/system_heap.c | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/drivers/dma-buf/heaps/cma_heap.c b/drivers/dma-buf/heaps/cma_heap.c
+index ee899f8e6721..9ce4ed970f78 100644
+--- a/drivers/dma-buf/heaps/cma_heap.c
++++ b/drivers/dma-buf/heaps/cma_heap.c
+@@ -404,3 +404,5 @@ static int add_default_cma_heap(void)
+ }
+ module_init(add_default_cma_heap);
+ MODULE_DESCRIPTION("DMA-BUF CMA Heap");
++MODULE_LICENSE("GPL v2");
++MODULE_IMPORT_NS(DMA_BUF);
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index 8a39783c3e19..de0d8ff54df5 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -515,3 +515,5 @@ static int system_heap_create(void)
+ 	return 0;
+ }
+ module_init(system_heap_create);
++MODULE_LICENSE("GPL v2");
++MODULE_IMPORT_NS(DMA_BUF);
+-- 
+2.45.2
+

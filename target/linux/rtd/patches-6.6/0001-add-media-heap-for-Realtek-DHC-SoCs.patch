@@ -1,0 +1,44 @@
+From b795af6e6ea5cca23a284693c97cff5eab08734a Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 10 Nov 2022 17:49:56 +0800
+Subject: [PATCH] dma-buf: heaps: add media heap for Realtek DHC SoCs
+
+Change-Id: I138716fa30359301279fa7e397405afdc2e23b0f
+---
+ drivers/dma-buf/heaps/Kconfig  | 9 +++++++++
+ drivers/dma-buf/heaps/Makefile | 5 +++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/dma-buf/heaps/Kconfig b/drivers/dma-buf/heaps/Kconfig
+index a5eef06c4226..116afb2ab8e1 100644
+--- a/drivers/dma-buf/heaps/Kconfig
++++ b/drivers/dma-buf/heaps/Kconfig
+@@ -12,3 +12,12 @@ config DMABUF_HEAPS_CMA
+ 	  Choose this option to enable dma-buf CMA heap. This heap is backed
+ 	  by the Contiguous Memory Allocator (CMA). If your system has these
+ 	  regions, you should say Y here.
++
++config DMABUF_HEAPS_REALTEK
++	tristate "DMA-BUF Realtek Heap"
++	depends on DMABUF_HEAPS && DMA_CMA
++	select DMA_OPS
++	help
++	  Choose this option to enable dma-buf Realtek heap. This heap is backed
++	  by the Contiguous Memory Allocator (CMA) & Reserved Memory for Realtek
++	  Platform.
+diff --git a/drivers/dma-buf/heaps/Makefile b/drivers/dma-buf/heaps/Makefile
+index 974467791032..9ee158fa4422 100644
+--- a/drivers/dma-buf/heaps/Makefile
++++ b/drivers/dma-buf/heaps/Makefile
+@@ -1,3 +1,8 @@
+ # SPDX-License-Identifier: GPL-2.0
+ obj-$(CONFIG_DMABUF_HEAPS_SYSTEM)	+= system_heap.o
+ obj-$(CONFIG_DMABUF_HEAPS_CMA)		+= cma_heap.o
++obj-$(CONFIG_DMABUF_HEAPS_REALTEK)	+= rtk_media_heaps.o
++rtk_media_heaps-y			+= rtk_media_heap.o rtk_heap_debug.o \
++					   rtk_heap_device.o rtk_heap_helpers.o \
++					   rtk_heap_dma.o rtk_protect.o
++ccflags-y				+= -I$(srctree)/mm
+-- 
+2.42.0
+

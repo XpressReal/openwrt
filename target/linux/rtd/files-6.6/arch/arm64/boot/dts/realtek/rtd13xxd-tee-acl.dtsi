@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2023 Realtek Semiconductor Corp.
+ */
+/ {
+	firmware {
+		optee {
+			rtk,acl {
+				rtk,acl-enable;
+				rtk,acl-mode = <1>;  /* 0-debugging , 1-production */
+				rtk,acl-level = <1>;  /* 1-only check ta in array, 2-limit all ta used */
+				rtk,acl-array = <&rtkacl_ta_mgkid>;
+				rtkacl_ta_mgkid: rtkacl_ta {
+					ta-uuid = <0x00d1ca22 0x17644e35 0x90aa5b8c 0x12630764>;
+					ca-list = <&rtkacl_ca_mgkid_hidl>,
+					          <&rtkacl_ca_mgkid_aidl>;
+				};
+				rtkacl_ca_mgkid_hidl: rtkacl_ca_0 {
+					process-name = "vendor.realtek.nflx_mgkid@1.0-service";
+					uid = <1000>, <0>;
+					gid = <1000>, <0>;
+				};
+				rtkacl_ca_mgkid_aidl: rtkacl_ca_1 {
+					process-name = "vendor.realtek.nflx_mgkid-service";
+					uid = <1000>, <0>;
+					gid = <1000>, <0>;
+				};
+			};
+		};
+	};
+};

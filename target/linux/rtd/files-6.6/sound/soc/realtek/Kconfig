@@ -1,0 +1,34 @@
+config SND_ACPU_AO
+	tristate "Realtek AO in ACPU"
+	depends on SND_SOC_REALTEK
+	select RTK_REFCLK
+	default n
+
+config SND_HIFI_AO
+	tristate "Realtek AO in HIFI"
+	depends on SND_SOC_REALTEK
+	select RTK_REFCLK
+	default n
+
+config RTK_CACHEABLE_HEADER
+	bool "HIFI with cacheable header"
+	default n
+	help
+	  Enable cacheable HIFI header.
+
+config SND_SOC_REALTEK
+	tristate "Realtek ALSA Driver"
+	select SND_HWDEP
+	select SND_RAWMIDI
+	select SND_PCM
+	select SND_SOC_COMPRESS
+	default n
+
+config SND_SOC_REALTEK_NOTIFY
+	tristate "Realtek ALSA Notfiy Driver"
+	depends on SND_SOC_REALTEK
+	default n
+
+config SND_SOC_REALTEK_FL3236
+	tristate "REALTEK Feature for fl3236 light driver"
+	default n

@@ -1,0 +1,46 @@
+From 7ee9ab087ebd28b2bcc5c52ace806f420b182f8c Mon Sep 17 00:00:00 2001
+From: "T.J. Mercier" <tjmercier@google.com>
+Date: Wed, 3 Feb 2021 21:05:12 -0800
+Subject: [PATCH 33/35] ANDROID: dma-heap: Let system heap report total pool
+ size
+
+This information will be exposed as part of Android Bugreport[1].
+
+[1]: https://android-review.googlesource.com/q/topic:%22b%252F167709539%22+(status:open%20OR%20status:merged)
+
+Bug: 167709539
+Bug: 275698445
+Change-Id: I5b810bd18a495fe8e7f4907c047917ba4718796d
+Signed-off-by: T.J. Mercier <tjmercier@google.com>
+---
+ drivers/dma-buf/heaps/system_heap.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index f18730a04409..bba9ef9abd61 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -489,8 +489,20 @@ static struct dma_buf *system_heap_allocate(struct dma_heap *heap,
+ 	return system_heap_do_allocate(heap, len, fd_flags, heap_flags, false);
+ }
+ 
++static long system_get_pool_size(struct dma_heap *heap)
++{
++	unsigned long num_bytes = 0;
++	struct dmabuf_page_pool **pool = pools;
++
++	for (int i = 0; i < NUM_ORDERS; i++, pool++)
++		num_bytes += dmabuf_page_pool_get_size(*pool);
++
++	return num_bytes;
++}
++
+ static const struct dma_heap_ops system_heap_ops = {
+ 	.allocate = system_heap_allocate,
++	.get_pool_size = system_get_pool_size,
+ };
+ 
+ static struct dma_buf *system_uncached_heap_allocate(struct dma_heap *heap,
+-- 
+2.45.2
+

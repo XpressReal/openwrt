@@ -1,0 +1,49 @@
+From a026143cfda9df40bef4efc485e9b1c1093e87cb Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 10 Nov 2022 17:33:39 +0800
+Subject: [PATCH] media: rc: add irda driver for Realtek DHC SoCs
+
+Change-Id: I2ff4afd075cb340785c9680bff5bc651f96db8a8
+---
+ drivers/media/rc/Kconfig                  |   2 +
+ drivers/media/rc/Makefile                 |   1 +
+ include/media/rc-map.h                    |   1 +
+ 3 files changed, 1561 insertions(+)
+
+diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
+index fd5a7a058714..fcbdd68861c3 100644
+--- a/drivers/media/rc/Kconfig
++++ b/drivers/media/rc/Kconfig
+@@ -375,6 +375,8 @@ config IR_RX51
+ 
+ source "drivers/media/rc/img-ir/Kconfig"
+ 
++source "drivers/media/rc/rtk-ir/Kconfig"
++
+ config RC_LOOPBACK
+ 	tristate "Remote Control Loopback Driver"
+ 	help
+diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
+index 0db51fad27d6..f235abd03e38 100644
+--- a/drivers/media/rc/Makefile
++++ b/drivers/media/rc/Makefile
+@@ -51,3 +51,4 @@ obj-$(CONFIG_IR_SIR) += sir_ir.o
+ obj-$(CONFIG_IR_MTK) += mtk-cir.o
+ obj-$(CONFIG_RC_XBOX_DVD) += xbox_remote.o
+ obj-$(CONFIG_IR_TOY) += ir_toy.o
++obj-$(CONFIG_IR_RTK) += rtk-ir/
+diff --git a/include/media/rc-map.h b/include/media/rc-map.h
+index 4676545ffd8f..8f2c7b53325f 100644
+--- a/include/media/rc-map.h
++++ b/include/media/rc-map.h
+@@ -311,6 +311,7 @@ struct rc_map *rc_map_get(const char *name);
+ #define RC_MAP_RC5_TV                    "rc-rc5-tv"
+ #define RC_MAP_RC6_MCE                   "rc-rc6-mce"
+ #define RC_MAP_REAL_AUDIO_220_32_KEYS    "rc-real-audio-220-32-keys"
++#define RC_MAP_REALTEK_DHC               "rc-realtek-dhc"
+ #define RC_MAP_REDDO                     "rc-reddo"
+ #define RC_MAP_SNAPSTREAM_FIREFLY        "rc-snapstream-firefly"
+ #define RC_MAP_STREAMZAP                 "rc-streamzap"
+-- 
+2.42.0
+

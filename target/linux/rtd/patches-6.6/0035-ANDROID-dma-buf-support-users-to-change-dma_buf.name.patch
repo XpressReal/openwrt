@@ -1,0 +1,124 @@
+From 2997eff66cfd5b628eaf3f0ab636b2da05c5dd5f Mon Sep 17 00:00:00 2001
+From: Guangming Cao <Guangming.Cao@mediatek.com>
+Date: Wed, 1 Sep 2021 20:41:54 +0800
+Subject: [PATCH 35/35] ANDROID: dma-buf: support users to change dma_buf.name
+
+User space user can call DMA_BUF_SET_NAME to set dma_buf.name,
+but until now we can't set it at kernel side, it's difficult to debug
+kernel dma_buf users.
+
+There are some kernel users of dma_heap also need it at MTK,
+such as camera, it's also have a allocator for other camera part,
+unlike most case in userspace, it's in kernel.
+For debug buffer owner, we need add it to let it can set debug name
+for each dmabuf, so that we can know dmabuf owner by dma_buf.name.
+
+Leaf changes summary: 1 artifact changed
+Changed leaf types summary: 0 leaf type changed
+Removed/Changed/Added functions summary: 0 Removed, 0 Changed, 1 Added function
+Removed/Changed/Added variables summary: 0 Removed, 0 Changed, 0 Added variable
+
+1 Added function:
+
+  [A] 'function long int dma_buf_set_name(dma_buf*, const char*)'
+
+Bug: 223353875
+Link: https://lore.kernel.org/patchwork/patch/1459719/
+Change-Id: Iac5c6b8838b9b4d976f4525d000e17a3abab94f6
+Signed-off-by: Guangming Cao <Guangming.Cao@mediatek.com>
+Signed-off-by: Georgi Djakov <quic_c_gdjako@quicinc.com>
+Signed-off-by: Chris Goldsworthy <quic_cgoldswo@quicinc.com>
+(cherry picked from commit af2ae8657c9a8123c333a5301278b68168a18a15)
+Jacky Liu <qsliu@google.com>: resolve 6.1 conflicts
+Signed-off-by: Andrew Chant <achant@google.com>
+---
+ drivers/dma-buf/dma-buf.c | 40 ++++++++++++++++++++++++++++++++-------
+ include/linux/dma-buf.h   |  1 +
+ 2 files changed, 34 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/dma-buf/dma-buf.c b/drivers/dma-buf/dma-buf.c
+index f3c2519aa57f..b059209090c0 100644
+--- a/drivers/dma-buf/dma-buf.c
++++ b/drivers/dma-buf/dma-buf.c
+@@ -335,6 +335,16 @@ static __poll_t dma_buf_poll(struct file *file, poll_table *poll)
+ 	return events;
+ }
+ 
++static long _dma_buf_set_name(struct dma_buf *dmabuf, const char *name)
++{
++	spin_lock(&dmabuf->name_lock);
++	kfree(dmabuf->name);
++	dmabuf->name = name;
++	spin_unlock(&dmabuf->name_lock);
++
++	return 0;
++}
++
+ /**
+  * dma_buf_set_name - Set a name to a specific dma_buf to track the usage.
+  * It could support changing the name of the dma-buf if the same
+@@ -348,19 +358,35 @@ static __poll_t dma_buf_poll(struct file *file, poll_table *poll)
+  * devices, return -EBUSY.
+  *
+  */
+-static long dma_buf_set_name(struct dma_buf *dmabuf, const char __user *buf)
++long dma_buf_set_name(struct dma_buf *dmabuf, const char *name)
++{
++	long ret = 0;
++	char *buf = kstrndup(name, DMA_BUF_NAME_LEN, GFP_KERNEL);
++
++	if (!buf)
++		return -ENOMEM;
++
++	ret = _dma_buf_set_name(dmabuf, buf);
++	if (ret)
++		kfree(buf);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(dma_buf_set_name);
++
++static long dma_buf_set_name_user(struct dma_buf *dmabuf, const char __user *buf)
+ {
+ 	char *name = strndup_user(buf, DMA_BUF_NAME_LEN);
++	long ret = 0;
+ 
+ 	if (IS_ERR(name))
+ 		return PTR_ERR(name);
+ 
+-	spin_lock(&dmabuf->name_lock);
+-	kfree(dmabuf->name);
+-	dmabuf->name = name;
+-	spin_unlock(&dmabuf->name_lock);
++	ret = _dma_buf_set_name(dmabuf, name);
++	if (ret)
++		kfree(name);
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ #if IS_ENABLED(CONFIG_SYNC_FILE)
+@@ -509,7 +535,7 @@ static long dma_buf_ioctl(struct file *file,
+ 
+ 	case DMA_BUF_SET_NAME_A:
+ 	case DMA_BUF_SET_NAME_B:
+-		return dma_buf_set_name(dmabuf, (const char __user *)arg);
++		return dma_buf_set_name_user(dmabuf, (const char __user *)arg);
+ 
+ #if IS_ENABLED(CONFIG_SYNC_FILE)
+ 	case DMA_BUF_IOCTL_EXPORT_SYNC_FILE:
+diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+index 599244065dbe..a3f2bb76a012 100644
+--- a/include/linux/dma-buf.h
++++ b/include/linux/dma-buf.h
+@@ -713,5 +713,6 @@ int dma_buf_vmap(struct dma_buf *dmabuf, struct iosys_map *map);
+ void dma_buf_vunmap(struct dma_buf *dmabuf, struct iosys_map *map);
+ int dma_buf_vmap_unlocked(struct dma_buf *dmabuf, struct iosys_map *map);
+ void dma_buf_vunmap_unlocked(struct dma_buf *dmabuf, struct iosys_map *map);
++long dma_buf_set_name(struct dma_buf *dmabuf, const char *name);
+ int dma_buf_get_flags(struct dma_buf *dmabuf, unsigned long *flags);
+ #endif /* __DMA_BUF_H__ */
+-- 
+2.45.2
+

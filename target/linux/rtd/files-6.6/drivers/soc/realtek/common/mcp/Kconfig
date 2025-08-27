@@ -1,0 +1,5 @@
+config RTK_MCP
+	tristate "Realtek MCP driver"
+        default n
+        help
+          Realtek MCP driver

@@ -1,0 +1,43 @@
+From dd2fabc6b91a191282f0511652ad4fc3150c8d8e Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 10 Nov 2022 17:32:44 +0800
+Subject: [PATCH] i2c: add i2c driver for Realtek DHC SoCs
+
+Change-Id: I21d06d980578da7e2a8c1b1ac363b772731e4de5
+---
+ drivers/i2c/busses/Kconfig    |    6 +
+ drivers/i2c/busses/Makefile   |    1 +
+ 2 files changed, 1221 insertions(+)
+
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index fea403431f22..df1129ac72f9 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -929,6 +929,12 @@ config I2C_QUP
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-qup.
+ 
++config I2C_REALTEK
++	tristate "Realtek I2C"
++	depends on I2C
++	help
++	  This driver supports I2C Controller on Realtek SoC
++
+ config I2C_RIIC
+ 	tristate "Renesas RIIC adapter"
+ 	depends on ARCH_RENESAS || COMPILE_TEST
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index 1336b04f40e2..61a5720d4d1e 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -92,6 +92,7 @@ obj-$(CONFIG_I2C_PXA_PCI)	+= i2c-pxa-pci.o
+ obj-$(CONFIG_I2C_QCOM_CCI)	+= i2c-qcom-cci.o
+ obj-$(CONFIG_I2C_QCOM_GENI)	+= i2c-qcom-geni.o
+ obj-$(CONFIG_I2C_QUP)		+= i2c-qup.o
++obj-$(CONFIG_I2C_REALTEK)	+= i2c-rtk.o
+ obj-$(CONFIG_I2C_RIIC)		+= i2c-riic.o
+ obj-$(CONFIG_I2C_RK3X)		+= i2c-rk3x.o
+ obj-$(CONFIG_I2C_S3C2410)	+= i2c-s3c2410.o
+-- 
+2.42.0
+

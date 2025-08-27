@@ -1,0 +1,70 @@
+From 6dd8ffe2cf0e6a91eec05c26b8d35e06a2c8a66c Mon Sep 17 00:00:00 2001
+From: Edgar Lee <cylee12@realtek.com>
+Date: Tue, 27 Feb 2024 16:21:42 +0800
+Subject: [PATCH] drm/panfrost: add sysfs file eglswapinterval
+
+Change-Id: I525a34ebe2687532356945eb808af5165b2d41ac
+---
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_drv.c b/drivers/gpu/drm/panfrost/panfrost_drv.c
+index 4c27124..4b5559c 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_drv.c
++++ b/drivers/gpu/drm/panfrost/panfrost_drv.c
+@@ -541,6 +541,36 @@
+ 	.gem_prime_mmap		= drm_gem_prime_mmap,
+ };
+ 
++static u32 eglSwapInterival_val;
++
++static ssize_t eglSwapInterval_store(struct device *device, struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	int ret;
++	bool val;
++
++	ret = kstrtobool(buf, &val);
++	if (ret)
++		return ret;
++	eglSwapInterival_val = val ? 1 : 0;
++	return count;
++}
++
++static ssize_t eglSwapInterval_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++        return sprintf(buf, "%d\n", eglSwapInterival_val);
++}
++static DEVICE_ATTR_RW(eglSwapInterval);
++
++static struct attribute *panfrost_attrs[] = {
++	&dev_attr_eglSwapInterval.attr,
++        NULL,
++};
++
++static struct attribute_group panfrost_attr_group = {
++        .attrs      = panfrost_attrs,
++};
++
+ static int panfrost_probe(struct platform_device *pdev)
+ {
+ 	struct panfrost_device *pfdev;
+@@ -573,6 +603,12 @@
+ 	mutex_init(&pfdev->shrinker_lock);
+ 	INIT_LIST_HEAD(&pfdev->shrinker_list);
+ 
++	err = device_add_group(pfdev->dev, &panfrost_attr_group);
++	if (err) {
++		dev_err(&pdev->dev, "Failed to add sysfs group\n");
++		goto err_out0;
++	}
++
+ 	err = panfrost_device_init(pfdev);
+ 	if (err) {
+ 		if (err != -EPROBE_DEFER)
+@@ -619,6 +655,7 @@
+ 	pm_runtime_disable(pfdev->dev);
+ 	panfrost_device_fini(pfdev);
+ 	pm_runtime_set_suspended(pfdev->dev);
++	device_remove_group(pfdev->dev, &panfrost_attr_group);
+ 
+ 	drm_dev_put(ddev);
+ 	return 0;

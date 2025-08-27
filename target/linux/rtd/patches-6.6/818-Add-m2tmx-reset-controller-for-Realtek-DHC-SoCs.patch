@@ -1,0 +1,45 @@
+From fe184662f241d12caa811dc2eb8c0b54c6ef7f8b Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 17 Nov 2022 15:37:52 +0800
+Subject: [PATCH] reset: add m2tmx reset controller for Realtek DHC SoCs
+
+Change-Id: If4e28933601387a95d10be5f9b5b68f3f1b40e83
+---
+ drivers/reset/Kconfig  | 8 ++++++++
+ drivers/reset/Makefile | 1 +
+ 2 files changed, 9 insertions(+)
+
+diff --git a/drivers/reset/Kconfig b/drivers/reset/Kconfig
+index ccd59ddd7610..f29c9af7cb0d 100644
+--- a/drivers/reset/Kconfig
++++ b/drivers/reset/Kconfig
+@@ -193,6 +193,14 @@ config RESET_RASPBERRYPI
+ 	  interfacing with RPi4's co-processor and model these firmware
+ 	  initialization routines as reset lines.
+ 
++config RESET_RTK_M2TMX
++	tristate "Realtek M2TMX Reset Driver"
++	depends on OF && MFD_SYSCON
++	default n
++	select RTK_PM_TRACE
++	help
++	  This enable Realtek M2TMX Reset Driver
++ 
+ config RESET_RZG2L_USBPHY_CTRL
+ 	tristate "Renesas RZ/G2L USBPHY control driver"
+ 	depends on ARCH_RZG2L || COMPILE_TEST
+diff --git a/drivers/reset/Makefile b/drivers/reset/Makefile
+index 8270da8a4baa..3a5c9be89903 100644
+--- a/drivers/reset/Makefile
++++ b/drivers/reset/Makefile
+@@ -27,6 +27,7 @@ obj-$(CONFIG_RESET_POLARFIRE_SOC) += reset-mpfs.o
+ obj-$(CONFIG_RESET_QCOM_AOSS) += reset-qcom-aoss.o
+ obj-$(CONFIG_RESET_QCOM_PDC) += reset-qcom-pdc.o
+ obj-$(CONFIG_RESET_RASPBERRYPI) += reset-raspberrypi.o
++obj-$(CONFIG_RESET_RTK_M2TMX) += reset-rtk-m2tmx.o
+ obj-$(CONFIG_RESET_RZG2L_USBPHY_CTRL) += reset-rzg2l-usbphy-ctrl.o
+ obj-$(CONFIG_RESET_SCMI) += reset-scmi.o
+ obj-$(CONFIG_RESET_SIMPLE) += reset-simple.o
+-- 
+2.45.2
+

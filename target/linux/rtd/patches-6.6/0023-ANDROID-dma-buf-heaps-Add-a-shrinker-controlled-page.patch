@@ -1,0 +1,392 @@
+From 5aa86a68487b021f8950e4d84c701d525bbe2ff4 Mon Sep 17 00:00:00 2001
+From: John Stultz <john.stultz@linaro.org>
+Date: Fri, 2 Oct 2020 02:48:26 +0000
+Subject: [PATCH 23/35] ANDROID: dma-buf: heaps: Add a shrinker controlled page
+ pool
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch adds a simple shrinker controlled page pool to the
+dmabuf heaps subsystem.
+
+This replaces the use of the networking page_pool, over concerns
+that the lack of a shrinker for that implementation may cause
+additional low-memory kills
+
+TODO: Take another pass at trying to unify this w/ the ttm pool
+
+Thoughts and feedback would be greatly appreciated!
+
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Liam Mark <lmark@codeaurora.org>
+Cc: Laura Abbott <labbott@kernel.org>
+Cc: Brian Starkey <Brian.Starkey@arm.com>
+Cc: Hridya Valsaraju <hridya@google.com>
+Cc: Suren Baghdasaryan <surenb@google.com>
+Cc: Sandeep Patil <sspatil@google.com>
+Cc: Daniel Mentz <danielmentz@google.com>
+Cc: Chris Goldsworthy <cgoldswo@codeaurora.org>
+Cc: Ørjan Eide <orjan.eide@arm.com>
+Cc: Robin Murphy <robin.murphy@arm.com>
+Cc: Ezequiel Garcia <ezequiel@collabora.com>
+Cc: Simon Ser <contact@emersion.fr>
+Cc: James Jones <jajones@nvidia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: linux-mm@kvack.org
+Cc: linux-media@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Bug: 168742043
+Change-Id: Ic385e27a352d2fbf665ca288fee4f34eea5666d0
+---
+ drivers/dma-buf/heaps/Kconfig     |   3 +
+ drivers/dma-buf/heaps/Makefile    |   1 +
+ drivers/dma-buf/heaps/page_pool.c | 247 ++++++++++++++++++++++++++++++
+ drivers/dma-buf/heaps/page_pool.h |  55 +++++++
+ 4 files changed, 306 insertions(+)
+ create mode 100644 drivers/dma-buf/heaps/page_pool.c
+ create mode 100644 drivers/dma-buf/heaps/page_pool.h
+
+diff --git a/drivers/dma-buf/heaps/Kconfig b/drivers/dma-buf/heaps/Kconfig
+index ad58616b34df..054edea30387 100644
+--- a/drivers/dma-buf/heaps/Kconfig
++++ b/drivers/dma-buf/heaps/Kconfig
+@@ -3,6 +3,9 @@ menuconfig DMABUF_HEAPS_DEFERRED_FREE
+ 	help
+ 	  Choose this option to enable the DMA-BUF heaps deferred-free library.
+ 
++config DMABUF_HEAPS_PAGE_POOL
++	tristate
++
+ config DMABUF_HEAPS_SYSTEM
+ 	tristate "DMA-BUF System Heap"
+ 	depends on DMABUF_HEAPS
+diff --git a/drivers/dma-buf/heaps/Makefile b/drivers/dma-buf/heaps/Makefile
+index 4e7839875615..4d4cd94a3a4a 100644
+--- a/drivers/dma-buf/heaps/Makefile
++++ b/drivers/dma-buf/heaps/Makefile
+@@ -1,4 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+ obj-$(CONFIG_DMABUF_HEAPS_DEFERRED_FREE) += deferred-free-helper.o
++obj-$(CONFIG_DMABUF_HEAPS_PAGE_POOL)	+= page_pool.o
+ obj-$(CONFIG_DMABUF_HEAPS_SYSTEM)	+= system_heap.o
+ obj-$(CONFIG_DMABUF_HEAPS_CMA)		+= cma_heap.o
+diff --git a/drivers/dma-buf/heaps/page_pool.c b/drivers/dma-buf/heaps/page_pool.c
+new file mode 100644
+index 000000000000..70e180b33783
+--- /dev/null
++++ b/drivers/dma-buf/heaps/page_pool.c
+@@ -0,0 +1,247 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * DMA BUF page pool system
++ *
++ * Copyright (C) 2020 Linaro Ltd.
++ *
++ * Based on the ION page pool code
++ * Copyright (C) 2011 Google, Inc.
++ */
++
++#include <linux/freezer.h>
++#include <linux/list.h>
++#include <linux/slab.h>
++#include <linux/swap.h>
++#include <linux/sched/signal.h>
++#include "page_pool.h"
++
++static LIST_HEAD(pool_list);
++static DEFINE_MUTEX(pool_list_lock);
++
++static inline
++struct page *dmabuf_page_pool_alloc_pages(struct dmabuf_page_pool *pool)
++{
++	if (fatal_signal_pending(current))
++		return NULL;
++	return alloc_pages(pool->gfp_mask, pool->order);
++}
++
++static inline void dmabuf_page_pool_free_pages(struct dmabuf_page_pool *pool,
++					       struct page *page)
++{
++	__free_pages(page, pool->order);
++}
++
++static void dmabuf_page_pool_add(struct dmabuf_page_pool *pool, struct page *page)
++{
++	int index;
++
++	if (PageHighMem(page))
++		index = POOL_HIGHPAGE;
++	else
++		index = POOL_LOWPAGE;
++
++	mutex_lock(&pool->mutex);
++	list_add_tail(&page->lru, &pool->items[index]);
++	pool->count[index]++;
++	mutex_unlock(&pool->mutex);
++	mod_node_page_state(page_pgdat(page), NR_KERNEL_MISC_RECLAIMABLE,
++			    1 << pool->order);
++}
++
++static struct page *dmabuf_page_pool_remove(struct dmabuf_page_pool *pool, int index)
++{
++	struct page *page;
++
++	mutex_lock(&pool->mutex);
++	page = list_first_entry_or_null(&pool->items[index], struct page, lru);
++	if (page) {
++		pool->count[index]--;
++		list_del(&page->lru);
++		mod_node_page_state(page_pgdat(page), NR_KERNEL_MISC_RECLAIMABLE,
++				    -(1 << pool->order));
++	}
++	mutex_unlock(&pool->mutex);
++
++	return page;
++}
++
++static struct page *dmabuf_page_pool_fetch(struct dmabuf_page_pool *pool)
++{
++	struct page *page = NULL;
++
++	page = dmabuf_page_pool_remove(pool, POOL_HIGHPAGE);
++	if (!page)
++		page = dmabuf_page_pool_remove(pool, POOL_LOWPAGE);
++
++	return page;
++}
++
++struct page *dmabuf_page_pool_alloc(struct dmabuf_page_pool *pool)
++{
++	struct page *page = NULL;
++
++	if (WARN_ON(!pool))
++		return NULL;
++
++	page = dmabuf_page_pool_fetch(pool);
++
++	if (!page)
++		page = dmabuf_page_pool_alloc_pages(pool);
++	return page;
++}
++EXPORT_SYMBOL_GPL(dmabuf_page_pool_alloc);
++
++void dmabuf_page_pool_free(struct dmabuf_page_pool *pool, struct page *page)
++{
++	if (WARN_ON(pool->order != compound_order(page)))
++		return;
++
++	dmabuf_page_pool_add(pool, page);
++}
++EXPORT_SYMBOL_GPL(dmabuf_page_pool_free);
++
++static int dmabuf_page_pool_total(struct dmabuf_page_pool *pool, bool high)
++{
++	int count = pool->count[POOL_LOWPAGE];
++
++	if (high)
++		count += pool->count[POOL_HIGHPAGE];
++
++	return count << pool->order;
++}
++
++struct dmabuf_page_pool *dmabuf_page_pool_create(gfp_t gfp_mask, unsigned int order)
++{
++	struct dmabuf_page_pool *pool = kmalloc(sizeof(*pool), GFP_KERNEL);
++	int i;
++
++	if (!pool)
++		return NULL;
++
++	for (i = 0; i < POOL_TYPE_SIZE; i++) {
++		pool->count[i] = 0;
++		INIT_LIST_HEAD(&pool->items[i]);
++	}
++	pool->gfp_mask = gfp_mask | __GFP_COMP;
++	pool->order = order;
++	mutex_init(&pool->mutex);
++
++	mutex_lock(&pool_list_lock);
++	list_add(&pool->list, &pool_list);
++	mutex_unlock(&pool_list_lock);
++
++	return pool;
++}
++EXPORT_SYMBOL_GPL(dmabuf_page_pool_create);
++
++void dmabuf_page_pool_destroy(struct dmabuf_page_pool *pool)
++{
++	struct page *page;
++	int i;
++
++	/* Remove us from the pool list */
++	mutex_lock(&pool_list_lock);
++	list_del(&pool->list);
++	mutex_unlock(&pool_list_lock);
++
++	/* Free any remaining pages in the pool */
++	for (i = 0; i < POOL_TYPE_SIZE; i++) {
++		while ((page = dmabuf_page_pool_remove(pool, i)))
++			dmabuf_page_pool_free_pages(pool, page);
++	}
++
++	kfree(pool);
++}
++EXPORT_SYMBOL_GPL(dmabuf_page_pool_destroy);
++
++static int dmabuf_page_pool_do_shrink(struct dmabuf_page_pool *pool, gfp_t gfp_mask,
++				      int nr_to_scan)
++{
++	int freed = 0;
++	bool high;
++
++	if (current_is_kswapd())
++		high = true;
++	else
++		high = !!(gfp_mask & __GFP_HIGHMEM);
++
++	if (nr_to_scan == 0)
++		return dmabuf_page_pool_total(pool, high);
++
++	while (freed < nr_to_scan) {
++		struct page *page;
++
++		/* Try to free low pages first */
++		page = dmabuf_page_pool_remove(pool, POOL_LOWPAGE);
++		if (!page)
++			page = dmabuf_page_pool_remove(pool, POOL_HIGHPAGE);
++
++		if (!page)
++			break;
++
++		dmabuf_page_pool_free_pages(pool, page);
++		freed += (1 << pool->order);
++	}
++
++	return freed;
++}
++
++static int dmabuf_page_pool_shrink(gfp_t gfp_mask, int nr_to_scan)
++{
++	struct dmabuf_page_pool *pool;
++	int nr_total = 0;
++	int nr_freed;
++	int only_scan = 0;
++
++	if (!nr_to_scan)
++		only_scan = 1;
++
++	mutex_lock(&pool_list_lock);
++	list_for_each_entry(pool, &pool_list, list) {
++		if (only_scan) {
++			nr_total += dmabuf_page_pool_do_shrink(pool,
++							       gfp_mask,
++							       nr_to_scan);
++		} else {
++			nr_freed = dmabuf_page_pool_do_shrink(pool,
++							      gfp_mask,
++							      nr_to_scan);
++			nr_to_scan -= nr_freed;
++			nr_total += nr_freed;
++			if (nr_to_scan <= 0)
++				break;
++		}
++	}
++	mutex_unlock(&pool_list_lock);
++
++	return nr_total;
++}
++
++static unsigned long dmabuf_page_pool_shrink_count(struct shrinker *shrinker,
++						   struct shrink_control *sc)
++{
++	return dmabuf_page_pool_shrink(sc->gfp_mask, 0);
++}
++
++static unsigned long dmabuf_page_pool_shrink_scan(struct shrinker *shrinker,
++						  struct shrink_control *sc)
++{
++	if (sc->nr_to_scan == 0)
++		return 0;
++	return dmabuf_page_pool_shrink(sc->gfp_mask, sc->nr_to_scan);
++}
++
++struct shrinker pool_shrinker = {
++	.count_objects = dmabuf_page_pool_shrink_count,
++	.scan_objects = dmabuf_page_pool_shrink_scan,
++	.seeks = DEFAULT_SEEKS,
++	.batch = 0,
++};
++
++int dmabuf_page_pool_init_shrinker(void)
++{
++	return register_shrinker(&pool_shrinker, "dmabuf-page-pool-shrinker");
++}
++module_init(dmabuf_page_pool_init_shrinker);
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/dma-buf/heaps/page_pool.h b/drivers/dma-buf/heaps/page_pool.h
+new file mode 100644
+index 000000000000..6b083b04f195
+--- /dev/null
++++ b/drivers/dma-buf/heaps/page_pool.h
+@@ -0,0 +1,55 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * DMA BUF PagePool implementation
++ * Based on earlier ION code by Google
++ *
++ * Copyright (C) 2011 Google, Inc.
++ * Copyright (C) 2020 Linaro Ltd.
++ */
++
++#ifndef _DMABUF_PAGE_POOL_H
++#define _DMABUF_PAGE_POOL_H
++
++#include <linux/device.h>
++#include <linux/kref.h>
++#include <linux/mm_types.h>
++#include <linux/mutex.h>
++#include <linux/shrinker.h>
++#include <linux/types.h>
++
++/* page types we track in the pool */
++enum {
++	POOL_LOWPAGE,      /* Clean lowmem pages */
++	POOL_HIGHPAGE,     /* Clean highmem pages */
++
++	POOL_TYPE_SIZE,
++};
++
++/**
++ * struct dmabuf_page_pool - pagepool struct
++ * @count[]:		array of number of pages of that type in the pool
++ * @items[]:		array of list of pages of the specific type
++ * @mutex:		lock protecting this struct and especially the count
++ *			item list
++ * @gfp_mask:		gfp_mask to use from alloc
++ * @order:		order of pages in the pool
++ * @list:		list node for list of pools
++ *
++ * Allows you to keep a pool of pre allocated pages to use
++ */
++struct dmabuf_page_pool {
++	int count[POOL_TYPE_SIZE];
++	struct list_head items[POOL_TYPE_SIZE];
++	struct mutex mutex;
++	gfp_t gfp_mask;
++	unsigned int order;
++	struct list_head list;
++};
++
++struct dmabuf_page_pool *dmabuf_page_pool_create(gfp_t gfp_mask,
++						 unsigned int order);
++void dmabuf_page_pool_destroy(struct dmabuf_page_pool *pool);
++struct page *dmabuf_page_pool_alloc(struct dmabuf_page_pool *pool);
++void dmabuf_page_pool_free(struct dmabuf_page_pool *pool, struct page *page);
++
++#endif /* _DMABUF_PAGE_POOL_H */
+-- 
+2.45.2
+

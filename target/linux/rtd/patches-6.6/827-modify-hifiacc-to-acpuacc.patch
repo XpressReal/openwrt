@@ -1,0 +1,79 @@
+From 3e73627d73611cdbc882298e9b44666b991500cf Mon Sep 17 00:00:00 2001
+From: yaozenhu <yaozenhu@realtek.com>
+Date: Wed, 27 Mar 2024 11:33:46 +0800
+Subject: [PATCH] modify-hifiacc-to-acpuacc
+
+---
+ sound/soc/realtek/common/snd-hifi-realtek.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/sound/soc/realtek/common/snd-hifi-realtek.c b/sound/soc/realtek/common/snd-hifi-realtek.c
+index 04d4e34bedde..61d2308ffa82 100644
+--- a/sound/soc/realtek/common/snd-hifi-realtek.c
++++ b/sound/soc/realtek/common/snd-hifi-realtek.c
+@@ -491,7 +491,7 @@ static int rtk_snd_init_ringheader_AI(struct snd_pcm_runtime *runtime)
+ 	for (ch = 0; ch < runtime->channels; ch++) {
+ 		ret = rtk_snd_alloc(dev, size, (void *)&dat, (void **)&vaddr,
+ 				    RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC |
+-				    RTK_FLAG_HIFIACC);
++				    RTK_FLAG_ACPUACC);
+ 		if (ret) {
+ 			pr_err("%s alloc mem fail\n", __func__);
+ 			return ret;
+@@ -541,7 +541,7 @@ static int rtk_snd_capture_LPCM_ringheader_AI(struct snd_pcm_runtime *runtime)
+ 
+ 	ret = rtk_snd_alloc(dev, size, (void *)&dat, (void **)&vaddr,
+ 			    RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC |
+-			    RTK_FLAG_HIFIACC);
++			    RTK_FLAG_ACPUACC);
+ 	if (ret) {
+ 		pr_err("%s alloc mem fail\n", __func__);
+ 		return ret;
+@@ -589,7 +589,7 @@ static int rtk_snd_capture_PTS_ringheader_AI(struct snd_pcm_runtime *runtime)
+ 
+ 	ret = rtk_snd_alloc(dev, size, (void *)&dat, (void **)&vaddr,
+ 			    RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC |
+-			    RTK_FLAG_HIFIACC);
++			    RTK_FLAG_ACPUACC);
+ 	if (ret) {
+ 		pr_err("%s alloc mem fail\n", __func__);
+ 		return ret;
+@@ -641,7 +641,7 @@ static int rtk_snd_init_ringheader_DEC_AO(struct snd_pcm_runtime *runtime)
+ 	for (ch = 0; ch < runtime->channels; ch++) {
+ 		ret = rtk_snd_alloc(dev, size, (void *)&dat, (void **)&vaddr,
+ 				    RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC |
+-				    RTK_FLAG_HIFIACC);
++				    RTK_FLAG_ACPUACC);
+ 		if (ret) {
+ 			pr_err("%s alloc mem fail\n", __func__);
+ 			return ret;
+@@ -706,7 +706,7 @@ static int rtk_snd_init_ringheader_AO(struct snd_pcm_runtime *runtime)
+ 
+ 	ret = rtk_snd_alloc(dev, size, (void *)&dat, (void **)&vaddr,
+ 			    RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC |
+-			    RTK_FLAG_HIFIACC);
++			    RTK_FLAG_ACPUACC);
+ 	if (ret) {
+ 		pr_err("%s alloc mem fail\n", __func__);
+ 		return ret;
+@@ -803,7 +803,7 @@ static int rtk_snd_init_decoder_inring(struct snd_pcm_runtime *runtime)
+ 
+ 	ret = rtk_snd_alloc(dev, size, (void *)&dat, (void **)&vaddr,
+ 			    RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC |
+-			    RTK_FLAG_HIFIACC);
++			    RTK_FLAG_ACPUACC);
+ 	if (ret) {
+ 		pr_err("%s alloc mem fail\n", __func__);
+ 		return ret;
+@@ -839,7 +839,7 @@ static int rtk_snd_init_decoder_inring(struct snd_pcm_runtime *runtime)
+ 
+ 	ret = rtk_snd_alloc(dev, size, (void *)&dat, (void **)&vaddr,
+ 			    RTK_FLAG_NONCACHED | RTK_FLAG_SCPUACC |
+-			    RTK_FLAG_HIFIACC);
++			    RTK_FLAG_ACPUACC);
+ 	if (ret) {
+ 		pr_err("%s alloc mem fail\n", __func__);
+ 		return ret;
+-- 
+2.34.1
+

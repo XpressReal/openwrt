@@ -1,0 +1,96 @@
+/* PLEASE include this file inside a node */
+/ {
+	display_subsystem: display-subsystem {
+		compatible = "realtek,display-subsystem";
+		ports = <&vo0_out>;
+		realtek,krpc-agent = <&acpu_kernel_agent>, <&hifi_kernel_agent>;
+		status = "disabled";
+		memory-region = <&cma_reserved_0>;
+	};
+
+	vo0: vo0@98080000 {
+		compatible = "realtek,rtd-crtc-main";
+		reg = <0x98080000 0x2000>;
+		interrupts = <0 33 4>;
+		hwlocks = <&sb2_lock5 1>;
+		memory-region = <&cma_reserved_0>;
+		vo0_out: port {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			vo0_out_hdmi: endpoint@0 {
+				reg = <0>;
+				remote-endpoint = <&hdmi_in_vo0>;
+			};
+			vo0_out_cvbs: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&cvbs_in_vo0>;
+			};
+		};
+	};
+
+	vo1: vo1 {
+		compatible = "realtek,rtd-crtc-second";
+		interrupts = <0 33 4>;
+		hwlocks = <&sb2_lock5 1>;
+		status = "disabled";
+	};
+
+	vo2: vo2 {
+		compatible = "realtek,rtd-crtc-extend";
+		interrupts = <0 33 4>;
+		hwlocks = <&sb2_lock5 1>;
+		status = "disabled";
+	};
+
+	hdmi: hdmi {
+		compatible = "realtek,rtk-hdmi";
+		syscon = <&hdmi_tx>, <&crt>, <&hdmi_top>;
+		clocks = <&cc RTD1619B_CRT_CLK_EN_HDMI>;
+		clock-names = "clk_en_hdmi";
+		resets = <&cc RTD1619B_CRT_RSTN_HDMI>;
+		reset-names = "rstn_hdmi";
+		hpd-gpios = <&gpio 7 GPIO_PULL_DOWN>;
+		hdmi5v-gpios = <&gpio 47 GPIO_ACTIVE_HIGH>;
+		rxsense-mode = <1>;
+		hdcp = <2>;
+		realtek,krpc-agent = <&acpu_kernel_agent>;
+		memory-region = <&cma_reserved_0>;
+		hdmi_in: port {
+			hdmi_in_vo0: endpoint {
+				remote-endpoint = <&vo0_out_hdmi>;
+			};
+		};
+	};
+
+	cvbs: cvbs@9804D140 {
+		compatible = "realtek,rtk-cvbs";
+		reg = <0x9804D140 0x18>;
+		status = "disabled";
+		memory-region = <&cma_reserved_0>;
+		cvbs_in: port {
+			cvbs_in_vo0: endpoint {
+				remote-endpoint = <&vo0_out_cvbs>;
+			};
+		};
+	};
+
+	dsi: dsi {
+		compatible = "realtek,rtk-dsi";
+		syscon = <&mipi_dsi>;
+		clocks = <&cc RTD1619B_CRT_CLK_EN_MIPI_DSI>;
+		clock-names = "clk_en_dsi";
+		resets = <&cc RTD1619B_CRT_RSTN_MIPI_DSI>;
+		reset-names = "dsi";
+		status = "disabled";
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			dsi_in: port@0 {
+				reg = <0>;
+			};
+			dsi_out: port@1 {
+				reg = <1>;
+			};
+		};
+	};
+};

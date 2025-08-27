@@ -1,0 +1,22 @@
+diff --git a/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi b/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi
+index af035c4..6ef4503 100644
+--- a/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi
++++ b/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge.dtsi
+@@ -255,7 +255,7 @@
+ };
+ 
+ &display_subsystem {
+-	ports = <&vo0_out>;
++	ports = <&vo1_out>, <&vo0_out>;
+ 	status = "okay";
+ };
+ 
+@@ -265,7 +265,7 @@
+ };
+ 
+ &vo1 {
+-	status = "disabled";
++	status = "okay";
+ 	vo1_out: port {
+ 		vo1_out_dsi: endpoint {
+ 			remote-endpoint = <&dsi_in_vo1>;

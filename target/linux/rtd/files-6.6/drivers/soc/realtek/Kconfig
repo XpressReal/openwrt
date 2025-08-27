@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+menu "Realtek SoC drivers"
+
+config RTK_IMAGE_CODEC
+	tristate "RTK Image Codec"
+	default y
+
+menuconfig RTD13XX_RTK_CODEC
+	tristate "Realtek RTD13XX Codec"
+	default n
+	help
+	  Realtek RTD13XX codec support.
+
+	  If unsure, say N.
+
+config RTD13XX_VE1_CODEC
+	tristate "RTK Video Engine 1 Codec"
+	depends on RTD13XX_RTK_CODEC
+	default n
+
+menuconfig RTD13XXD_RTK_CODEC
+	tristate "Realtek RTD13XXD Codec"
+	default n
+	help
+	  Realtek RTD13XXD codec support.
+
+	  If unsure, say N.
+
+config RTD13XXD_VE1_CODEC
+	tristate "RTK Video Engine 1 Codec"
+	depends on RTD13XXD_RTK_CODEC
+	default n
+
+menuconfig RTD1325_RTK_CODEC
+	tristate "Realtek RTD1325 Codec"
+	default n
+	help
+	  Realtek RTD1325 codec support.
+
+	  If unsure, say N.
+
+config RTD1325_VE1_CODEC
+	tristate "RTK Video Engine 1 Codec"
+	depends on RTD1325_RTK_CODEC
+	default n
+
+menuconfig RTD16XXB_RTK_CODEC
+	tristate "Realtek RTD16XXB Codec"
+	default n
+	help
+	  Realtek RTD16XXB codec support.
+
+	  If unsure, say N.
+
+config RTD16XXB_VE1_CODEC
+	tristate "RTK Video Engine 1 Codec"
+	depends on RTD16XXB_RTK_CODEC
+	default n
+
+source "drivers/soc/realtek/common/Kconfig"
+source "drivers/soc/realtek/cpudvfs/Kconfig"
+source "drivers/soc/realtek/cpuhp/Kconfig"
+source "drivers/soc/realtek/gpu/Kconfig"
+source "drivers/soc/realtek/tee_mem/Kconfig"
+
+endmenu

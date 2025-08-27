@@ -1,0 +1,44 @@
+From 676f48a9fa72b6855abc4eff1825958c3b89c07c Mon Sep 17 00:00:00 2001
+From: Stanley Chang <stanley_chang@realtek.com>
+Date: Fri, 7 Jan 2022 15:44:14 +0800
+Subject: [PATCH] usb: core: add an usb port monitor driver
+
+[Information]
+Implement an usb port monitor driver to check if usb device disconnected or died.
+
+Change-Id: I5eb69d7efab7f8105628c22638ad234b6cac2fc9
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+---
+ drivers/usb/core/Kconfig  | 6 ++++++
+ drivers/usb/core/Makefile | 1 +
+ 2 files changed, 7 insertions(+)
+
+diff --git a/drivers/usb/core/Kconfig b/drivers/usb/core/Kconfig
+index 351ede4b5de2..0c249d5418f0 100644
+--- a/drivers/usb/core/Kconfig
++++ b/drivers/usb/core/Kconfig
+@@ -105,6 +105,12 @@ config USB_LEDS_TRIGGER_USBPORT
+ 	  trigger allows specifying list of USB ports that should turn on LED
+ 	  when some USB device gets connected.
+ 
++config USB_MONITOR_USBPORT
++	tristate "USB port monitor"
++	depends on USB
++	help
++	  This driver monitors USB device if lived or disconnected.
++
+ config USB_AUTOSUSPEND_DELAY
+ 	int "Default autosuspend delay"
+ 	depends on USB
+diff --git a/drivers/usb/core/Makefile b/drivers/usb/core/Makefile
+index 7d338e9c0657..ca758f04f9bd 100644
+--- a/drivers/usb/core/Makefile
++++ b/drivers/usb/core/Makefile
+@@ -19,3 +19,4 @@ endif
+ obj-$(CONFIG_USB)		+= usbcore.o
+ 
+ obj-$(CONFIG_USB_LEDS_TRIGGER_USBPORT)	+= ledtrig-usbport.o
++obj-$(CONFIG_USB_MONITOR_USBPORT)	+= monitor-usbport.o
+-- 
+2.45.2
+

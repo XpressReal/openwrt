@@ -1,0 +1,24 @@
+config DRM_RTK
+	tristate "DRM Support for Realtek SoCs"
+	depends on DRM
+	select DRM_GEM_CMA_HELPER
+	select DRM_KMS_HELPER
+	select DRM_GEM_DMA_HELPER
+	select DRM_DISPLAY_HELPER
+	select DRM_DISPLAY_DP_HELPER
+	select DRM_DISPLAY_HDCP_HELPER
+	select DRM_DISPLAY_HDMI_HELPER
+	select DRM_MIPI_DSI
+	help
+	  Choose this option if you have a Realtek SoCs.
+	  The module will be called realtek-drm
+	  This driver provides kernel mode setting and
+	  buffer management to userspace.
+
+if DRM_RTK
+
+config RTK_METADATA_AUTOJUDGE
+	bool "Realtek specific METADATA buffer auto judgement"
+	default n
+
+endif

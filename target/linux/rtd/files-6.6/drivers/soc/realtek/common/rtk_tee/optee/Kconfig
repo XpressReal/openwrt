@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# OP-TEE Trusted Execution Environment Configuration
+config REALTEK_OPTEE
+	tristate "Realtek OP-TEE"
+	depends on HAVE_ARM_SMCCC
+	depends on MMU
+	help
+	  This implements the OP-TEE Trusted Execution Environment (TEE)
+	  driver for Realtek DHC SoCs.
+
+config OPTEE_SHM_NUM_PRIV_PAGES
+	int "Private Shared Memory Pages"
+	default 1
+	depends on REALTEK_OPTEE
+	help
+	  This sets the number of private shared memory pages to be
+	  used by OP-TEE TEE driver.
+
+config OPTEE_MEM_API
+	tristate "Realtek DHC SoC memory protection support"
+	depends on REALTEK_OPTEE
+	default y
+	help
+	  This implements the Realtek DHC SoC's memory protection mechanism.
+
+config OPTEE_ACL_API
+	bool "Realtek ACL function support"
+	depends on REALTEK_OPTEE
+	default y
+	help
+	  This implements the Realtek ACL function.

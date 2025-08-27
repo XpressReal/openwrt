@@ -1,0 +1,35 @@
+From 6c5af1dd1c54374cec37fa2f898b02a4df33a8df Mon Sep 17 00:00:00 2001
+From: Suren Baghdasaryan <surenb@google.com>
+Date: Tue, 16 Feb 2021 15:06:39 -0800
+Subject: [PATCH 25/35] ANDROID: dma-buf: heaps: fix a warning in dmabuf page
+ pools
+
+dmabuf_page_pool_init_shrinker needs to be static to prevent a warning
+when compiling with -Wmissing-prototypes. Change it to be static.
+
+Fixes: e7dac4c3231c ("ANDROID: dma-buf: heaps: Add a shrinker controlled page pool")
+
+Bug: 168742043
+Reported-by: kernel test robot <lkp@intel.com>
+Signed-off-by: Suren Baghdasaryan <surenb@google.com>
+Change-Id: I64184cf4062e33c14a60b9c3d505db922f2b9c0b
+---
+ drivers/dma-buf/heaps/page_pool.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma-buf/heaps/page_pool.c b/drivers/dma-buf/heaps/page_pool.c
+index 70e180b33783..252394fe3367 100644
+--- a/drivers/dma-buf/heaps/page_pool.c
++++ b/drivers/dma-buf/heaps/page_pool.c
+@@ -239,7 +239,7 @@ struct shrinker pool_shrinker = {
+ 	.batch = 0,
+ };
+ 
+-int dmabuf_page_pool_init_shrinker(void)
++static int dmabuf_page_pool_init_shrinker(void)
+ {
+ 	return register_shrinker(&pool_shrinker, "dmabuf-page-pool-shrinker");
+ }
+-- 
+2.45.2
+

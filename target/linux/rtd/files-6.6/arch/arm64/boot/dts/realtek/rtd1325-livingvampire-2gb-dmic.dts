@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2023 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include "rtd1325-livingvampire.dtsi"
+
+/ {
+	compatible = "realtek,livingvampire", "realtek,rtd1325";
+	model = "Realtek Living Vampire EVB (2GB)";
+
+	memory@40000 {
+		device_type = "memory";
+		reg = <0x00040000 0x7ffc0000>; /* 2 GB */
+	};
+};
+
+&audio_out {
+    pinctrl-0 = <&i2s_loopback_pins>, <&dmic_loc0_pins>;
+    i2s {
+        status = "okay";
+        realtek,ao-i2s-channel = <2>;
+    };
+};
+
+&audio_spdif_in {
+	status = "disabled";
+};

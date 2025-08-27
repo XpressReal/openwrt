@@ -1,0 +1,57 @@
+From a81d3a523ec1c4f37469663b6949d3dbaffa6539 Mon Sep 17 00:00:00 2001
+From: Stanley Chang <stanley_chang@realtek.com>
+Date: Sat, 26 Aug 2023 11:10:06 +0800
+Subject: [PATCH] usb: dwc3: add Realtek DHC RTD SoC dwc3 glue layer driver
+
+[ upstream commit 34c200483569fc209e31017e2f6fdbfcb79cd3d5 ]
+
+Realtek DHC RTD SoCs integrate dwc3 IP and has some customizations to
+support different generations of SoCs.
+
+The RTD1619b subclass SoC only supports USB 2.0 from dwc3. The driver
+can set a maximum speed to support this. Add role switching function,
+that can switch USB roles through other drivers, or switch USB roles
+through user space through set /sys/class/usb_role/.
+
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+Acked-by: Thinh Nguyen <Thinh.Nguyen@synopsys.com>
+Link: https://lore.kernel.org/r/20230826031028.1892-1-stanley_chang@realtek.com
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Change-Id: If0eb458e306eec6450cd81868a2a26f6ff08afb7
+---
+ drivers/usb/dwc3/Kconfig  | 11 +++++++++++
+ drivers/usb/dwc3/Makefile |  1 +
+ 2 files changed, 12 insertions(+)
+
+diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+index 98efcbb76c88..5fc27b20df63 100644
+--- a/drivers/usb/dwc3/Kconfig
++++ b/drivers/usb/dwc3/Kconfig
+@@ -178,4 +178,15 @@ config USB_DWC3_OCTEON
+ 	  Only the host mode is currently supported.
+ 	  Say 'Y' or 'M' here if you have one such device.
+ 
++config USB_DWC3_RTK
++	tristate "Realtek DWC3 Platform Driver"
++	depends on OF && ARCH_REALTEK
++	default USB_DWC3
++	select USB_ROLE_SWITCH
++	help
++	  RTK DHC RTD SoCs with DesignWare Core USB3 IP inside,
++	  and IP Core configured for USB 2.0 and USB 3.0 in host
++	  or dual-role mode.
++	  Say 'Y' or 'M' if you have such device.
++
+ endif
+diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
+index fe1493d4bbe5..124eda2522d9 100644
+--- a/drivers/usb/dwc3/Makefile
++++ b/drivers/usb/dwc3/Makefile
+@@ -55,3 +55,4 @@ obj-$(CONFIG_USB_DWC3_QCOM)		+= dwc3-qcom.o
+ obj-$(CONFIG_USB_DWC3_IMX8MP)		+= dwc3-imx8mp.o
+ obj-$(CONFIG_USB_DWC3_XILINX)		+= dwc3-xilinx.o
+ obj-$(CONFIG_USB_DWC3_OCTEON)		+= dwc3-octeon.o
++obj-$(CONFIG_USB_DWC3_RTK)		+= dwc3-rtk.o
+-- 
+2.45.2
+

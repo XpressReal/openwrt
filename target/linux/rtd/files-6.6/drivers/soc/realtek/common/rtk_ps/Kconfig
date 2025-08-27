@@ -1,0 +1,5 @@
+config RTK_PS_INFO
+	tristate "Realtek process info driver"
+	default n
+	help
+	  This driver provides an interface for querying process information.

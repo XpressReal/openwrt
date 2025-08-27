@@ -1,0 +1,77 @@
+From 5dfb774870f0f609f447e4f831401d4d1e982568 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 20 May 2021 19:29:11 +0800
+Subject: [PATCH 2/2] irqchip: gic-v3: Enable the 1-of-n mode for interrupt
+ routing
+
+---
+ drivers/irqchip/irq-gic-v3.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index efd57255bc09..2f45515da2ad 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -31,6 +31,8 @@
+ 
+ #include "irq-gic-common.h"
+ 
++#define GICD_CTLR_E1NWF	(1 << 7)
++
+ #define GICD_INT_NMI_PRI	(GICD_INT_DEF_PRI & ~0x80)
+ 
+ #define FLAGS_WORKAROUND_GICR_WAKER_MSM8996	(1ULL << 0)
+@@ -241,10 +243,15 @@ static void gic_enable_redist(bool enable)
+ 	rbase = gic_data_rdist_rd_base();
+ 
+ 	val = readl_relaxed(rbase + GICR_WAKER);
+-	if (enable)
++	if (enable) {
++
++	if (readl_relaxed(rbase) & 0x02000000)
++		writel_relaxed(readl_relaxed(rbase) & 0xfdffffff, rbase);
++
+ 		/* Wake up this CPU redistributor */
+ 		val &= ~GICR_WAKER_ProcessorSleep;
+-	else
++	} else {
+ 		val |= GICR_WAKER_ProcessorSleep;
++	}
+ 	writel_relaxed(val, rbase + GICR_WAKER);
+ 
+@@ -790,7 +796,7 @@ static void __init gic_dist_init(void)
+ 	/* Now do the common stuff */
+ 	gic_dist_config(base, GIC_LINE_NR, NULL);
+ 
+-	val = GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A | GICD_CTLR_ENABLE_G1;
++	val = GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A | GICD_CTLR_ENABLE_G1 | GICD_CTLR_E1NWF;
+ 	if (gic_data.rdists.gicd_typer2 & GICD_TYPER2_nASSGIcap) {
+ 		pr_info("Enabling SGIs without active state\n");
+ 		val |= GICD_CTLR_nASSGIreq;
+@@ -804,6 +810,13 @@ static void __init gic_dist_init(void)
+ 	 * enabled.
+ 	 */
+ 	affinity = gic_cpu_to_affinity(smp_processor_id());
++
++	/*
++	* The GIC selects the appropriate core for a SPI.
++	* GICD_IROUTER<n>.Interrupt_Routing_Mode = 1
++	*/
++	affinity |= 0x80000000;
++
+ 	for (i = 32; i < GIC_LINE_NR; i++)
+ 		gic_write_irouter(affinity, base + GICD_IROUTER + i * 8);
+ 
+@@ -1240,6 +1253,9 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
+ 	reg = gic_dist_base(d) + offset + (index * 8);
+ 	val = gic_cpu_to_affinity(cpu);
+ 
++	if (cpumask_subset(cpu_online_mask, mask_val))
++		val |= 0x80000000;
++
+ 	gic_write_irouter(val, reg);
+ 
+ 	/*
+-- 
+2.17.1
+

@@ -1,0 +1,36 @@
+patch 300-Add-Realtek-SoC-and-evaluation-boards.patch
+patch 600-Add-rfkill-driver-for-Realtek-DHC-SoCs.patch
+patch 800-Add-ahci-driver-for-Realtek-DHC-SoCs.patch
+patch 801-Add-Realtek-random-number-generator.patch
+patch 802-Add-Realtek-DHC-SoCs-clock-drivers.patch
+patch 803-01-Add-ifcp-firmware-driver-for-Realtek-DHC-SoCs.patch
+patch 803-02-Add-ifcp-mailbox-driver-for-Realtek-DHC-SoCs.patch
+patch 804-Add-Realtek-DHC-SoCs-gpio-driver.patch
+patch 805-Add-realtek-hwlock-driver.patch
+patch 806-Add-i2c-driver-for-Realtek-DHC-SoCs.patch
+patch 807-Add-lsadc-driver-for-Realtek-DHC-SoCs.patch
+patch 808-Add-irq-mux-driver-for-Realtek-DHC-SoCs.patch
+patch 809-Add-mfd-driver-for-apw888x-series-PMIC.patch
+patch 810-Add-Realtek-crypto-hardware-engine.patch
+patch 812-Add-emmc-driver-for-Realtek-DHC-SoCs.patch
+patch 813-Add-Realtek-efuse-driver.patch
+patch 814-Add-Realtek-DHC-SoCs-pinctrl-driver.patch
+patch 815-Add-reboot-driver-for-Realtek-DHC-SoCs.patch
+patch 816-Add-reboot-mode-driver-for-Realtek-DHC-SoCs.patch
+patch 817-Add-regulator-driver-for-apw888x-series-PMIC.patch
+patch 818-Add-m2tmx-reset-controller-for-Realtek-DHC-SoCs.patch
+patch 819-Add-rtc-driver-for-Realtek-DHC-SoCs.patch
+patch 820-Add-software-emulated-rtc-for-Realtek-DHC-SoCs.patch
+patch 821-Add-Realtek-SoC-related-drivers.patch
+patch 822-Add-GSPI-controller-driver.patch
+patch 823-Add-thermal-sensor-driver.patch
+patch 824-Add-watchdog-driver-for-Realtek-DHC-SoCs.patch
+patch 825-Add-SD-MMC-host-controller-driver.patch
+patch 826-Add-SDHCI-controller-driver.patch
+patch 900-Add-xtx-spi-nor.patch
+patch 901-Add-flash-info-for-XT25F32B.patch
+patch 902-Add-Raspberry-Pi-touchscreen-IC-FT5426-driver.patch
+patch 903-fix-i2c-warning.patch
+patch 904-add-disable-wp-support.patch
+
+kconf hardware avengers.cfg

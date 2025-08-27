@@ -1,0 +1,193 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config REALTEK_CHIP_INFO
+	tristate "Realtek SoC information"
+	default y
+	select SOC_BUS
+	help
+	  The Realtek chips information.
+
+config REALTEK_PM
+	tristate "Realtek power management driver"
+	default y
+	help
+	  Suspend to RAM and shutdown support.
+
+config REALTEK_CRT
+	tristate "Realtek CRT driver"
+	default n
+	help
+	  Realtek CRT driver
+
+config RTK_ACPU_VE1
+	bool "Realtek ACPU VE1 Driver"
+	help
+	   This driver provides ACPU VE1 controls
+
+config RTK_AVCPU_LOG
+	tristate "Realtek AVCPU share memory logging system"
+	depends on RTK_FW_REMOTEPROC
+	default y
+	help
+	  Enable AVCPU share memory logging read from userspace
+	  via device node.
+
+config RTK_BOOTSTATUS
+	tristate "Realtek SB2 Boot Status Driver"
+	default y
+	help
+	  Enable this to driver to provides addtional boot information
+	  under '/sys/kernel/bootstatus'.
+
+	  If not sure, say Y.
+
+config RTK_CMA_ACCELERATOR
+	tristate "Realtek CMA accelerator driver"
+	default n
+	depends on CMA && PM_SLEEP && ANDROID_VENDOR_HOOKS
+	help
+	  Choose this option if you wish to improve CMA performance.
+
+config RTK_DBGPROT
+	tristate "Realtek Debug Protection Driver"
+	help
+	  This driver provides Debug Protection infomation.
+
+config RTK_DEMOD
+	tristate "Realtek Demod Device Driver"
+	default y
+	help
+	  This driver provides userspace interface of Demod.
+
+config RTK_DPI_COORD
+	tristate "Realtek DPI coordinator driver"
+	default y
+	help
+	  This enables Realtek DPI coordinator driver
+
+config RTK_FAN
+	tristate "RTK Fan driver"
+	default n
+	help
+	  Realtek Fan driver
+
+config RTK_FSS
+	tristate "Realtek FSS Driver"
+	default n
+	help
+	  This enable Realtek FSS generic control interface.
+	  If not sure say N.
+
+config RTK_FWDBG
+	tristate "Realtek FWDBG driver"
+	depends on RPMSG_RTK_RPC
+	default y
+	help
+	  Realtek FW Debug driver
+
+config RTK_GPIO_MANAGER
+	tristate "Realtek GPIO Manager driver"
+	default y
+	help
+	  This enables Realtek GPIO manager driver to control gpio default value and suspend/resume state.
+
+config RTK_IFCP_CLIENT
+	tristate "Realtek IFCP client driver"
+	depends on RTK_IFCP && RTK_IFCP_MBOX
+	help
+	  Realtek IFCP client driver
+
+config RTK_MEM_REMAP
+	tristate "Realtek RPC Memory Remapping"
+	default y
+	help
+	  The driver provides memory remapping for realtek rpc mechanism.
+
+config RTK_NPUPP
+	tristate "Realtek NPUPP driver"
+	default n
+	help
+	  This driver utilizes the pre-processing module of NPU (called NPUPP or NPP).
+
+config RTK_PM_ALARM
+	tristate "Realtek Alarm Emulation"
+	depends on REALTEK_PM
+	default y
+	help
+	  Support for Alarm Emulation
+
+config RTK_PM_HIFI
+	tristate "Realtek HIFI PM"
+	depends on REALTEK_PM
+	default y
+	help
+	  Support for Realtek HIFI PM
+
+config RTK_REFCLK
+	tristate "Realtek Refclk Driver"
+	default y
+	help
+	  The driver provides refclk.
+
+config RTK_SB2_INV
+	tristate "Realtek SB2 Invalid Access Detection Driver"
+	default y
+	help
+	  Enable this to show SB2 Invalid Access in kernel log.
+	  This is useful for device driver implementation.
+
+	  If not sure, say Y.
+
+config RTK_SMCC
+	tristate "Realtek SMCC driver"
+	depends on ARCH_REALTEK
+	default y
+	help
+	  Realtek SMCC driver
+
+config RTK_TP
+	tristate "Realtek TP Device Driver"
+	default y
+	help
+	  This driver provides PM and userspace driver interface of TP.
+
+config RTK_USB_CTRL_MANAGER
+	tristate "RTK Multiple USB Host/Device Controller Manager"
+	default y if USB_OHCI_RTK || USB_EHCI_RTK || USB_DWC3_RTK
+	help
+	  The Realtek chips are Multiple host/peripheral USB controllers.
+	  Enable the driver to control clock, reset and usb power gpio.
+
+config RTK_KRPC
+	tristate "Realtek Kernel RPC driver"
+	depends on RPMSG_RTK_RPC
+	default y
+	help
+	  Realtek Kernel RPC driver
+
+config RTK_VCPU
+	tristate "Realtek VCPU driver"
+	default y
+	help
+	  This enables Realtek VCPU driver.
+
+config RTK_VE3_UART
+	tristate "Realtek VE3 uart driver"
+	default y
+	help
+	  This enables Realtek VE3 Pseudo Uart driver.
+
+config RTK_GIC_EXT
+	tristate "Realtek GIC extension driver"
+	help
+	  GIC-v3 extension setting for Realtek DHC SoCs.
+
+	  If not sure, say Y.
+
+source "drivers/soc/realtek/common/buflock/Kconfig"
+source "drivers/soc/realtek/common/hse/Kconfig"
+source "drivers/soc/realtek/common/rtk_pd/Kconfig"
+source "drivers/soc/realtek/common/rtk_ps/Kconfig"
+source "drivers/soc/realtek/common/rtk_scd/Kconfig"
+source "drivers/soc/realtek/common/rtk_sw_sync/Kconfig"
+source "drivers/soc/realtek/common/rtk_tee/Kconfig"

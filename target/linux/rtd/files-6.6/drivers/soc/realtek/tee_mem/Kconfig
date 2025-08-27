@@ -1,0 +1,6 @@
+config OPTEE_MEM_API
+        tristate "Realtek DHC SoC memory protection support"
+        depends on REALTEK_OPTEE
+        default y
+        help
+          This implements the Realtek DHC SoC's memory protection mechanism.

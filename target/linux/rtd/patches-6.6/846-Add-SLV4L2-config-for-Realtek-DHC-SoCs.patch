@@ -1,0 +1,63 @@
+From d5010d959148cc207f514752269e6eeb668ef71d Mon Sep 17 00:00:00 2001
+From: "joshua.yang" <joshua.yang@realtek.com>
+Date: Tue, 29 Oct 2024 15:13:52 +0800
+Subject: [PATCH] media: platform: add V4L2 config for Realtek DHC SoCs
+
+---
+ arch/arm64/boot/dts/realtek/rtd16xxb.dtsi       | 5 +++++
+ drivers/media/platform/Kconfig                  |  1 +
+ drivers/media/platform/rtk_vcodec/Kconfig | 14 ++++++++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi b/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
+index 571fc8da4f97..a3ef7e68dfd4 100644
+--- a/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
++++ b/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
+@@ -894,6 +894,11 @@ vcpu: vcpu {
+ 		status = "disabled";
+ 	};
+ 
++	ve2: ve2 {
++		compatible = "realtek,rtd16xxb-ve2-sl";
++		memory-region = <&cma_reserved_0>;
++	};
++
+ 	rtk_fwdbg: rtk_fwdbg {
+ 		compatible = "realtek, rtk-fwdbg";
+ 	};
+ create mode 100644 drivers/media/platform/realtek/rtk_vdec/Kconfig
+
+diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+index 90acb8495507..ca3a08968057 100644
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -88,5 +88,6 @@ source "drivers/media/platform/ti/Kconfig"
+ source "drivers/media/platform/verisilicon/Kconfig"
+ source "drivers/media/platform/via/Kconfig"
+ source "drivers/media/platform/xilinx/Kconfig"
++source "drivers/media/platform/rtk_vcodec/Kconfig"
+ 
+ endif # MEDIA_PLATFORM_DRIVERS
+diff --git a/drivers/media/platform/rtk_vcodec/Kconfig b/drivers/media/platform/rtk_vcodec/Kconfig
+new file mode 100644
+index 000000000000..8e43efc60235
+--- /dev/null
++++ b/drivers/media/platform/rtk_vcodec/Kconfig
+@@ -0,0 +1,12 @@
++# SPDX-License-Identifier: GPL-2.0-only
++
++config RTK_V4L2_VDEC
++bool "Realtek V4L2 Decoder Interface"
++	depends on VIDEO_DEV
++	select V4L_MEM2MEM_DRIVERS
++	select V4L2_MEM2MEM_DEV
++	select VIDEOBUF2_DMA_CONTIG
++	select VIDEOBUF2_VMALLOC
++	select MEDIA_CONTROLLER
++	select MEDIA_CONTROLLER_REQUEST_API
++	default n
++	help
++	  Realtek V4L2 Decoder Driver Interface
+-- 
+2.34.1
+

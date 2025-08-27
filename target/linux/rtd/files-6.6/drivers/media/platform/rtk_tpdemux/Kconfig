@@ -1,0 +1,24 @@
+config RTK_TPDEMUX
+	tristate "Realtek TP FRONTEND DEMUX support"
+	depends on PINCTRL && DVB_CORE && I2C
+	help
+	  This adds support for Realtek tp demux
+
+choice
+	prompt "Realtek tpdemux queue size"
+	depends on RTK_TPDEMUX
+	default RTK_TPDEMUX_QSIZE_1024KB
+
+config RTK_TPDEMUX_QSIZE_512KB
+	bool "512kB"
+
+config RTK_TPDEMUX_QSIZE_768KB
+	bool "768KB"
+
+config RTK_TPDEMUX_QSIZE_1024KB
+	bool "1024KB"
+
+config RTK_TPDEMUX_QSIZE_2048KB
+	bool "2048KB"
+
+endchoice

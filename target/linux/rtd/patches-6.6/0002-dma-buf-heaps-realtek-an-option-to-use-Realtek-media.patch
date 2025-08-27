@@ -1,0 +1,62 @@
+From 1ddc9c20a052551a0513995d9678824dc6dfc458 Mon Sep 17 00:00:00 2001
+From: Edward Wu <edwardwu@realtek.com>
+Date: Tue, 23 Jan 2024 07:55:05 +0800
+Subject: [PATCH] dma-buf: heaps: realtek: an option to use Realtek media heap
+ without Soc memory protection
+
+Change-Id: I454417d36ffabd2d1d7ad91feea89feb235a71be
+---
+ drivers/dma-buf/heaps/rtk_protect.c | 33 +++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/drivers/dma-buf/heaps/rtk_protect.c b/drivers/dma-buf/heaps/rtk_protect.c
+index 9d2b84376261..ba9a469ff486 100644
+--- a/drivers/dma-buf/heaps/rtk_protect.c
++++ b/drivers/dma-buf/heaps/rtk_protect.c
+@@ -11,6 +11,7 @@
+ 
+ static struct tee_mem_device *memdev;
+ 
++#ifdef CONFIG_OPTEE_MEM_API
+ int rtk_protect_create(struct rtk_protect_create_info *info)
+ {
+ 	struct tee_mem_protected_slot *slot;
+@@ -102,3 +103,35 @@ bool rtk_protect_handler_ready(void)
+ 
+ 	return memdev != NULL;
+ }
++#else
++int rtk_protect_create(struct rtk_protect_create_info *info)
++{
++        return 0;
++}
++
++int rtk_protect_change(struct rtk_protect_change_info *info)
++{
++        return 0;
++}
++
++int rtk_protect_destroy(struct rtk_protect_destroy_info *info)
++{
++        return 0;
++}
++
++int rtk_protect_ext_set(struct rtk_protect_ext_set *info)
++{
++        return 0;
++}
++
++int rtk_protect_ext_unset(struct rtk_protect_ext_unset *info)
++{
++        return 0;
++}
++
++bool rtk_protect_handler_ready(void)
++{
++	pr_warn("%s: use Realtek media heap without Soc memory protection\n", __func__);
++        return 1;
++}
++#endif /* CONFIG_OPTEE_MEM_API */
+-- 
+2.42.0
+

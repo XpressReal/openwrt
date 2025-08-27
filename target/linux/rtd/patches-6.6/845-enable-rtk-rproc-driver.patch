@@ -1,0 +1,38 @@
+From ff6964fb368edb74575fa15887f45dc6cc86be30 Mon Sep 17 00:00:00 2001
+From: yh_hsieh <yh_hsieh@realtek.com>
+Date: Mon, 15 Jan 2024 15:51:46 +0800
+Subject: [PATCH] enable rtk rproc driver
+
+---
+ drivers/remoteproc/Kconfig  | 5 +++++
+ drivers/remoteproc/Makefile | 1 +
+ 2 files changed, 6 insertions(+)
+
+diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
+index d99548fb5dde..58108db051ff 100644
+--- a/drivers/remoteproc/Kconfig
++++ b/drivers/remoteproc/Kconfig
+@@ -288,6 +288,11 @@ config TI_K3_R5_REMOTEPROC
+ 	  It's safe to say N here if you're not interested in utilizing
+ 	  a slave processor.
+ 
++config RTK_FW_REMOTEPROC
++	tristate "RTK REMOTEPROC DRIVER"
++	help
++	 enable RTK's rproc dirver.
++
+ endif # REMOTEPROC
+ 
+ endmenu
+diff --git a/drivers/remoteproc/Makefile b/drivers/remoteproc/Makefile
+index da2ace4ec86c..f8f4961893a5 100644
+--- a/drivers/remoteproc/Makefile
++++ b/drivers/remoteproc/Makefile
+@@ -34,3 +34,4 @@ obj-$(CONFIG_ST_SLIM_REMOTEPROC)	+= st_slim_rproc.o
+ obj-$(CONFIG_STM32_RPROC)		+= stm32_rproc.o
+ obj-$(CONFIG_TI_K3_DSP_REMOTEPROC)	+= ti_k3_dsp_remoteproc.o
+ obj-$(CONFIG_TI_K3_R5_REMOTEPROC)	+= ti_k3_r5_remoteproc.o
++obj-$(CONFIG_RTK_FW_REMOTEPROC)	+= rtk_fw_remoteproc.o
+-- 
+2.34.1
+

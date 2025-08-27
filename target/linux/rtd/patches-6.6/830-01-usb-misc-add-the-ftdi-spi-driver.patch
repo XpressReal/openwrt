@@ -1,0 +1,52 @@
+From fbec7bf545a789cc65841507a05ac8414d9cc2c9 Mon Sep 17 00:00:00 2001
+From: Haru Zheng <haruzheng@realtek.com>
+Date: Wed, 10 Nov 2021 16:40:11 +0800
+Subject: [PATCH] usb: rtk: add the ftdi-spi driver.
+
+[REVIEWER] Haru Zheng
+[Information]
+Add realtek energy probe kit support.
+Default build at module.
+Example on Stark:
+cat /dev/ftdi_spi_device_*
+
+Change-Id: I5063b702a0aa75c65db3d0e03ef630905a0eca30
+---
+ drivers/usb/misc/Kconfig  | 10 ++++++++++
+ drivers/usb/misc/Makefile |  1 +
+ 2 files changed, 11 insertions(+)
+
+diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+index 99b15b77dfd5..b7cc40aac3a0 100644
+--- a/drivers/usb/misc/Kconfig
++++ b/drivers/usb/misc/Kconfig
+@@ -303,6 +303,16 @@ config BRCM_USB_PINMAP
+ 	  signals, which are typically on dedicated pins on the chip,
+ 	  to any gpio.
+ 
++config USB_FTDI_SPI
++       tristate "Realtek Energy Probe Kit Support"
++       depends on USB
++       default m
++       help
++         Support Realtek energy probe kit, need usb and board.
++	 Can get Voltage and current data and infomation summary
++	 by /dev/ftdi_spi_device_*.
++	 Future are support SPI mode function.
++
+ config USB_ONBOARD_HUB
+ 	tristate "Onboard USB hub support"
+ 	depends on OF
+diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
+index 1992cc284d8a..ed21dd3f1738 100644
+--- a/drivers/usb/misc/Makefile
++++ b/drivers/usb/misc/Makefile
+@@ -32,4 +32,5 @@ obj-$(CONFIG_USB_CHAOSKEY)		+= chaoskey.o
+ obj-$(CONFIG_USB_SISUSBVGA)		+= sisusbvga/
+ obj-$(CONFIG_USB_LINK_LAYER_TEST)	+= lvstest.o
+ obj-$(CONFIG_BRCM_USB_PINMAP)		+= brcmstb-usb-pinmap.o
++obj-$(CONFIG_USB_FTDI_SPI)		+= ftdi-spi.o
+ obj-$(CONFIG_USB_ONBOARD_HUB)		+= onboard_usb_hub.o
+-- 
+2.45.2
+

@@ -1,0 +1,43 @@
+From ea4c226b6882c535999c2d04a2194b21ed574efb Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Fri, 11 Nov 2022 21:56:00 +0800
+Subject: [PATCH] mmc: host: add SD/MMC host controller driver for Realtek DHC
+ SoCs
+
+Change-Id: If6679f7825af5c6fb266be21887cd26115cb34cb
+---
+ drivers/mmc/host/Kconfig         |    5 +
+ drivers/mmc/host/Makefile        |    1 +
+ 2 files changed, 3981 insertions(+)
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index b64895dc6f02..124649b1ff3b 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -963,6 +963,11 @@ config MMC_WMT
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called wmt-sdmmc.
+ 
++config MMC_RTK_SDMMC
++	tristate "Realtek SD/MMC host controller support"
++	help
++	  Realtek SD/MMC host controller support.
++
+ config MMC_USDHI6ROL0
+ 	tristate "Renesas USDHI6ROL0 SD/SDIO Host Controller support"
+ 	depends on HAS_DMA
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index 8b16677afeb8..3e9ffacec16c 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -73,6 +73,7 @@ obj-$(CONFIG_MMC_TOSHIBA_PCI)	+= toshsd.o
+ obj-$(CONFIG_MMC_BCM2835)	+= bcm2835.o
+ obj-$(CONFIG_MMC_OWL)		+= owl-mmc.o
+ 
++obj-$(CONFIG_MMC_RTK_SDMMC)	+= rtk-sdmmc.o
+ obj-$(CONFIG_MMC_REALTEK_PCI)	+= rtsx_pci_sdmmc.o
+ obj-$(CONFIG_MMC_REALTEK_USB)	+= rtsx_usb_sdmmc.o
+ 
+-- 
+2.42.0
+

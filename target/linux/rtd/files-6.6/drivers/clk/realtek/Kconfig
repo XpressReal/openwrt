@@ -1,0 +1,110 @@
+# SPDX-License-Identifier: GPL-2.0-only
+menuconfig COMMON_CLK_REALTEK
+	bool "Clock driver for Realtek SoCs"
+	depends on ARCH_REALTEK || COMPILE_TEST
+	default y
+
+if COMMON_CLK_REALTEK
+
+config RTK_CLK_COMMON
+	tristate "Realtek Clock Common"
+	select RESET_CONTROLLER
+
+config RTK_CLK_PLL_PSAUD
+	bool
+
+config RTK_CLK_PLL_DIF
+	bool
+
+config RTK_CLK_PLL_MMC
+	bool
+
+config RTK_CLK_DCO
+	bool
+
+config RTK_CLK_REGMAP_CLKDET
+	bool
+
+config COMMON_CLK_RTD1195
+	tristate "RTD1195 Clock Controller"
+	select RTK_CLK_COMMON
+	default y
+	help
+	  Support for the clock controller on RTD1195
+
+config COMMON_CLK_RTD1295
+	tristate "RTD1295 Clock Controller"
+	select RTK_CLK_COMMON
+	default y
+	help
+	  Support for the clock controller on RTD1295
+
+config COMMON_CLK_RTD1395
+	tristate "RTD1395 Clock Controller"
+	select RTK_CLK_COMMON
+	select RTK_CLK_REGMAP_CLKDET
+	default y
+	help
+	  Support for the clock controller on RTD1395
+
+config COMMON_CLK_RTD1619
+	tristate "RTD1619 Clock Controller"
+	select RTK_CLK_COMMON
+	select RTK_CLK_PLL_PSAUD
+	select RTK_CLK_PLL_DIF
+	select RTK_CLK_PLL_MMC
+	select RTK_CLK_REGMAP_CLKDET
+	default y
+	help
+	  Support for the clock controller on RTD1619
+
+config COMMON_CLK_RTD1319
+	tristate "RTD1319 Clock Controller"
+	select RTK_CLK_COMMON
+	select RTK_CLK_PLL_PSAUD
+	select RTK_CLK_PLL_DIF
+	select RTK_CLK_PLL_MMC
+	select RTK_CLK_REGMAP_CLKDET
+	default y
+	help
+	  Support for the clock controller on RTD1319
+
+config COMMON_CLK_RTD1619B
+	tristate "RTD1619B Clock Controller"
+	select RTK_CLK_COMMON
+	select RTK_CLK_PLL_PSAUD
+	select RTK_CLK_PLL_DIF
+	select RTK_CLK_PLL_MMC
+	select RTK_CLK_REGMAP_CLKDET
+	select RTK_CLK_DCO
+	default y
+	help
+	  Support for the clock controller on RTD1619B
+
+config COMMON_CLK_RTD1319D
+	tristate "RTD1319D Clock Controller"
+	select RTK_CLK_COMMON
+	select RTK_CLK_PLL_PSAUD
+	select RTK_CLK_PLL_DIF
+	select RTK_CLK_PLL_MMC
+	select RTK_CLK_REGMAP_CLKDET
+	select RTK_CLK_DCO
+	default y
+	help
+	  Support for the clock controller on RTD1319D
+
+config COMMON_CLK_REALTEK_TEE
+	tristate "Realtek Tee Clock driver"
+	depends on REALTEK_TEE
+	default y
+	help
+	  Support to control pll_scpu in TEE.
+
+
+config RTK_CLK_DET
+	tristate "Clock Detection Support"
+	default y
+	help
+	  This enables clock detection support.
+
+endif

@@ -1,0 +1,221 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2022 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/regulator/anpec,apw888x.h>
+#include <dt-bindings/soc/realtek,pm.h>
+#include <dt-bindings/thermal/thermal.h>
+#include "rtd13xxd.dtsi"
+
+/ {
+	chosen {
+		stdout-path = "serial0:460800n8";
+		bootargs = "earlycon=uart8250,mmio32,0x98007800 console=ttyS0,460800 8250.nr_uarts=3 init=/init loglevel=4 max_loop=64 loop.max_part=7";
+	};
+
+	aliases {
+	};
+};
+
+
+&audio_in_i2s {
+	pinctrl-names = "default";
+	pinctrl-0 = <&ai_loc0_6pins>;
+	status = "disabled";
+};
+
+&audio_out {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spdif_pins>;
+	status = "okay";
+};
+
+&cec {
+	status = "okay";
+};
+
+&cp {
+	status = "okay";
+};
+
+&cpu_tm {
+	status = "okay";
+};
+
+&dbgprot {
+	status = "okay";
+};
+
+&emmc {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+};
+
+&hse {
+	status = "okay";
+};
+
+&i2c_0 {
+	status = "okay";
+};
+
+&i2c_1 {
+	status = "okay";
+};
+
+&i2c_3 {
+	status = "okay";
+};
+
+&i2c_4 {
+	status = "okay";
+};
+
+&i2c_5 {
+	status = "okay";
+};
+
+&irda {
+	wakeup-key = <116>,<148>;
+	status = "okay";
+};
+
+&jpeg {
+	status = "okay";
+};
+
+&nic {
+	status = "okay";
+};
+
+&pwm {
+	status = "disabled";
+};
+
+&reboot_mode {
+	status = "okay";
+};
+
+&rfkill {
+	rfkill-gpios = <&gpio 6 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+&lsadc {
+	status = "okay";
+};
+
+&rng {
+	status = "okay";
+};
+
+&rtk_pm {
+	wakeup-flags = <NORMAL_MODE>;
+	wakeup-gpio-list = <78 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>,
+			   <81 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>;
+	wakeup-timer = <0>;
+	dco = <DCO_DISABLE>;
+	status = "okay";
+};
+
+&sdhci {
+	status = "okay";
+};
+
+&sdio {
+	bus-width = <4>;
+	non-removable;
+	cap-sd-highspeed;
+	cap-mmc-highspeed;
+	sd-uhs-sdr12;
+	sd-uhs-sdr25;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	keep-power-in-suspend;
+	enable-sdio-wakeup;
+	no-sd;
+	no-mmc;
+	status = "okay";
+};
+
+&sound {
+	status = "okay";
+};
+
+&tp {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&uart2 {
+	status = "okay";
+};
+
+&usb_manager {
+	status = "okay";
+};
+
+&usb_port0_usb2phy {
+	status = "okay";
+};
+
+&usb_port0 {
+	realtek,power-gpio = <&gpio 48 GPIO_ACTIVE_LOW>;
+	status = "okay";
+};
+
+&usb_port1_usb2phy {
+	status = "okay";
+};
+
+&usb_port1 {
+	realtek,power-gpio = <&gpio 48 GPIO_ACTIVE_LOW>;
+	status = "okay";
+};
+
+&usb_port2_usb2phy {
+	status = "okay";
+};
+
+&usb_port2_usb3phy {
+	status = "disabled";
+};
+
+&usb_port2 {
+	realtek,power-gpio = <&gpio 49 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	dwc3@50000 {
+		usb-phy = <&usb_port2_usb2phy>;
+		phys = <&usb_port2_usb2phy>;
+		phy-names = "usb2-phy";
+		maximum-speed = "high-speed";
+	};
+};
+
+/delete-node/ &type_c;
+
+&ve1 {
+	status = "okay";
+};
+
+&watchdog {
+	status = "okay";
+};
+
+&rtk_smcc {
+	status = "okay";
+};

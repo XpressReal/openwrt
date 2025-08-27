@@ -1,0 +1,42 @@
+From c35b588a0ea486d2e5f775c35dbc9c6b3fcea18c Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Mon, 14 Nov 2022 16:27:11 +0800
+Subject: [PATCH] rtc: add rtc driver for Realtek DHC SoCs
+
+Change-Id: I5451f398ac663de185fbe9ddda8740741520a7e0
+---
+ drivers/rtc/Kconfig   |   7 +
+ drivers/rtc/Makefile  |   1 +
+ 2 files changed, 525 insertions(+)
+ create mode 100644 drivers/rtc/rtc-rtk.c
+
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index e1bc5214494e..51d61467aa98 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -1314,6 +1314,13 @@ config RTC_DRV_NTXEC
+ 	  embedded controller found in certain e-book readers designed by the
+ 	  original design manufacturer Netronix.
+ 
++config RTC_DRV_RTK
++	tristate "Realtek RTC"
++	depends on ARCH_REALTEK
++	select MFD_SYSCON
++	help
++	  Realtek RTC support.
++
+ comment "on-CPU RTC drivers"
+ 
+ config RTC_DRV_ASM9260
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 5ceeafe4d5b2..1e3a2c7dc8e1 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -180,3 +180,4 @@ obj-$(CONFIG_RTC_DRV_WM8350)	+= rtc-wm8350.o
+ obj-$(CONFIG_RTC_DRV_X1205)	+= rtc-x1205.o
+ obj-$(CONFIG_RTC_DRV_XGENE)	+= rtc-xgene.o
+ obj-$(CONFIG_RTC_DRV_ZYNQMP)	+= rtc-zynqmp.o
++obj-$(CONFIG_RTC_DRV_RTK)	+= rtc-rtk.o
+-- 
+2.42.0
+

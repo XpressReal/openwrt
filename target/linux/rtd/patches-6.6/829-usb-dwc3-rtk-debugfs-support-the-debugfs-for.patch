@@ -1,0 +1,25 @@
+From 7d2e4ac4db49b9a5529b6b3ae8c60b57afcf584b Mon Sep 17 00:00:00 2001
+From: Stanley Chang <stanley_chang@realtek.com>
+Date: Mon, 30 Oct 2023 14:44:27 +0800
+Subject: [PATCH] usb: dwc3: rtk: debugfs: support the debugfs for dwc3-rtk
+
+Add a driver to support debugfs for dwc3-rtk.
+
+Change-Id: Ie741686ac0999b063bddebf6cc127a472a87bd2b
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+---
+ drivers/usb/dwc3/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
+index 124eda2522d9..b8bc0033f763 100644
+--- a/drivers/usb/dwc3/Makefile
++++ b/drivers/usb/dwc3/Makefile
+@@ -56,3 +56,4 @@ obj-$(CONFIG_USB_DWC3_IMX8MP)		+= dwc3-imx8mp.o
+ obj-$(CONFIG_USB_DWC3_XILINX)		+= dwc3-xilinx.o
+ obj-$(CONFIG_USB_DWC3_OCTEON)		+= dwc3-octeon.o
+ obj-$(CONFIG_USB_DWC3_RTK)		+= dwc3-rtk.o
++obj-$(CONFIG_USB_DWC3_RTK)		+= dwc3-rtk-debugfs.o
+-- 
+2.45.2
+

@@ -1,0 +1,38 @@
+From 07881ba285f3389c358a3719eb4fffe08aaf6703 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Mon, 14 Nov 2022 16:54:05 +0800
+Subject: [PATCH] power: supply: Add simple battery driver for Realtek DHC SoCs
+
+Change-Id: Ic314264c79e4c950a81c6adbb60ade70eb28f3e2
+---
+ drivers/power/supply/Kconfig           |   5 +
+ drivers/power/supply/Makefile          |   1 +
+ 2 files changed, 139 insertions(+)
+ create mode 100644 drivers/power/supply/rtd1xxx_battery.c
+
+diff --git a/drivers/power/supply/Kconfig b/drivers/power/supply/Kconfig
+index 899182a11f9d..017cdaa91c2d 100644
+--- a/drivers/power/supply/Kconfig
++++ b/drivers/power/supply/Kconfig
+@@ -854,4 +854,9 @@ config CHARGER_RTD1XXX
+ 	help
+ 	  Simple charger driver for Realtek DHC SoCs.
+ 
++config BATTERY_RTD1XXX
++	tristate "Simple battery driver for Realtek DHC SoCs"
++	help
++	  Simple battery driver for Realtek DHC SoCs.
++
+ endif # POWER_SUPPLY
+diff --git a/drivers/power/supply/Makefile b/drivers/power/supply/Makefile
+index 8610d6242a6e..cc26ceef4900 100644
+--- a/drivers/power/supply/Makefile
++++ b/drivers/power/supply/Makefile
+@@ -105,3 +105,4 @@ obj-$(CONFIG_BATTERY_ACER_A500)	+= acer_a500_battery.o
+ obj-$(CONFIG_BATTERY_SURFACE)	+= surface_battery.o
+ obj-$(CONFIG_CHARGER_SURFACE)	+= surface_charger.o
+ obj-$(CONFIG_CHARGER_RTD1XXX)	+= rtd1xxx_ac.o
++obj-$(CONFIG_BATTERY_RTD1XXX)	+= rtd1xxx_battery.o
+-- 
+2.42.0
+

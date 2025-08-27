@@ -1,0 +1,34 @@
+From b43a85ad344f61cc5535e59d14bed8396c640625 Mon Sep 17 00:00:00 2001
+From: John Stultz <john.stultz@linaro.org>
+Date: Wed, 10 Feb 2021 19:23:09 +0000
+Subject: [PATCH 16/35] ANDROID: Add EXPORT_SYMBOL_GPL for dma_heap_get_name
+
+Upstream has no modules that use it, but in common
+we system/cma/etc are modular, so we need to export
+the new dma_heap_get_name() symbol
+
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Bug: 167709539
+Change-Id: I25d77467742ea9c309c909874e0f1e9adf8a64af
+Signed-off-by: Hridya Valsaraju <hridya@google.com>
+(cherry picked from commit f8c585821898ea87d51dcd520eb3c3889f1bc3ab)
+Signed-off-by: Palmer Dabbelt <palmerdabbelt@google.com>
+---
+ drivers/dma-buf/dma-heap.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/dma-buf/dma-heap.c b/drivers/dma-buf/dma-heap.c
+index a174e262d75c..e16cfc9b664d 100644
+--- a/drivers/dma-buf/dma-heap.c
++++ b/drivers/dma-buf/dma-heap.c
+@@ -265,6 +265,7 @@ const char *dma_heap_get_name(struct dma_heap *heap)
+ {
+ 	return heap->name;
+ }
++EXPORT_SYMBOL_GPL(dma_heap_get_name);
+ 
+ static void dma_heap_release(struct kref *ref)
+ {
+-- 
+2.45.2
+

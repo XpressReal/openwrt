@@ -1,0 +1,1 @@
+obj-$(CONFIG_CEC_RTK) += rtk_cec.o

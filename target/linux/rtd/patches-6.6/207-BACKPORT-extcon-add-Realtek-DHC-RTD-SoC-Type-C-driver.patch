@@ -1,0 +1,54 @@
+From 4c08243d98b0fca9d96159f241759a0c10ba3873 Mon Sep 17 00:00:00 2001
+From: Stanley Chang <stanley_chang@realtek.com>
+Date: Mon, 4 Sep 2023 13:12:47 +0800
+Subject: [PATCH] [BACKPORT] extcon: add Realtek DHC RTD SoC Type-C driver
+
+[ upstream commit 8a590d7371f02ba37d073bed9f988f529f95a03c ]
+
+This patch adds the extcon driver for Realtek DHC (digital home center)
+RTD SoCs type-c module. This can be used to detect whether the port is
+configured as a downstream or upstream facing port. And notify the status
+of extcon to listeners.
+
+Link: https://lore.kernel.org/lkml/20230904051253.23208-2-stanley_chang@realtek.com/
+Signed-off-by: Stanley Chang <stanley_chang@realtek.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Change-Id: Ieaa69865beccc2f754be25f64aba38d2f273fff3
+---
+ drivers/extcon/Kconfig             |   11 +
+ drivers/extcon/Makefile            |    1 +
+ 2 files changed, 1804 insertions(+)
+ create mode 100644 drivers/extcon/extcon-rtk-type-c.c
+
+diff --git a/drivers/extcon/Kconfig b/drivers/extcon/Kconfig
+index 7684b3afa630..db803be190c3 100644
+--- a/drivers/extcon/Kconfig
++++ b/drivers/extcon/Kconfig
+@@ -186,4 +186,15 @@ config EXTCON_USBC_TUSB320
+ 	  Say Y here to enable support for USB Type C cable detection extcon
+ 	  support using a TUSB320.
+ 
++config EXTCON_RTK_TYPE_C
++	tristate "Realtek RTD SoC extcon Type-C Driver"
++	depends on ARCH_REALTEK || COMPILE_TEST
++	depends on TYPEC
++	select USB_COMMON
++	help
++	  Say Y here to enable extcon support for USB Type C cable detection
++	  when using the Realtek RTD SoC USB Type-C port.
++	  The DHC (Digital Home Hub) RTD series SoC contains a type c module.
++	  This driver will detect the status of the type-c port.
++
+ endif
+diff --git a/drivers/extcon/Makefile b/drivers/extcon/Makefile
+index 1b390d934ca9..f779adb5e4c7 100644
+--- a/drivers/extcon/Makefile
++++ b/drivers/extcon/Makefile
+@@ -25,3 +25,4 @@ obj-$(CONFIG_EXTCON_SM5502)	+= extcon-sm5502.o
+ obj-$(CONFIG_EXTCON_USB_GPIO)	+= extcon-usb-gpio.o
+ obj-$(CONFIG_EXTCON_USBC_CROS_EC) += extcon-usbc-cros-ec.o
+ obj-$(CONFIG_EXTCON_USBC_TUSB320) += extcon-usbc-tusb320.o
++obj-$(CONFIG_EXTCON_RTK_TYPE_C) += extcon-rtk-type-c.o
+-- 
+2.42.0
+

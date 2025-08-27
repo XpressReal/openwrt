@@ -1,0 +1,50 @@
+From 692b36f98f2f394cfd1ed3ff2fd74fb754fd55b1 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Fri, 11 Nov 2022 22:31:24 +0800
+Subject: [PATCH] mmc: host: add SDHCI controller driver for Realtek DHC SoCs
+
+Change-Id: I82d52bf774b7bd7624ef2dbdc45ce65bb823f48e
+---
+ drivers/mmc/host/Kconfig     |  13 +
+ drivers/mmc/host/Makefile    |   1 +
+ 2 files changed, 997 insertions(+)
+
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index 124649b1ff3b..4dfcc5430ab4 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -216,6 +216,19 @@ config MMC_SDHCI_OF_HLWD
+ 
+ 	  If unsure, say N.
+ 
++config MMC_SDHCI_OF_RTK
++	tristate "SDHCI OF support for the Realtek SoC SDHCI controller"
++	depends on MMC_SDHCI_PLTFM
++	depends on OF
++	select MMC_SDHCI_IO_ACCESSORS
++	help
++	  This selects the Secure Digital Host Controller Interface in
++	  Realtek SoCs.
++
++	  If you have a controller with this interface, say Y or M here.
++
++	  If unsure, say N.
++
+ config MMC_SDHCI_OF_DWCMSHC
+ 	tristate "SDHCI OF support for the Synopsys DWC MSHC"
+ 	depends on MMC_SDHCI_PLTFM
+diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
+index 3e9ffacec16c..2c9cb17a10d4 100644
+--- a/drivers/mmc/host/Makefile
++++ b/drivers/mmc/host/Makefile
+@@ -91,6 +91,7 @@ obj-$(CONFIG_MMC_SDHCI_OF_ESDHC)	+= sdhci-of-esdhc.o
+ obj-$(CONFIG_MMC_SDHCI_OF_HLWD)		+= sdhci-of-hlwd.o
+ obj-$(CONFIG_MMC_SDHCI_OF_DWCMSHC)	+= sdhci-of-dwcmshc.o
+ obj-$(CONFIG_MMC_SDHCI_OF_SPARX5)	+= sdhci-of-sparx5.o
++obj-$(CONFIG_MMC_SDHCI_OF_RTK)		+= sdhci-rtk.o
+ obj-$(CONFIG_MMC_SDHCI_BCM_KONA)	+= sdhci-bcm-kona.o
+ obj-$(CONFIG_MMC_SDHCI_IPROC)		+= sdhci-iproc.o
+ obj-$(CONFIG_MMC_SDHCI_MSM)		+= sdhci-msm.o
+-- 
+2.42.0
+

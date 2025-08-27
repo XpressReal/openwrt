@@ -1,0 +1,34 @@
+From ebaa2fcc6714288c2d1deb485c89c082a92209fe Mon Sep 17 00:00:00 2001
+From: "Isaac J. Manjarres" <isaacm@codeaurora.org>
+Date: Mon, 1 Nov 2021 15:04:31 -0700
+Subject: [PATCH 21/35] ANDROID: Allow the deferred-free library heap to be
+ compiled into the GKI
+
+The deferred-free library heap can be useful for modular implementations
+of the system heap, so compile it as a part of the GKI for arm64 and
+x86.
+
+Bug: 194472281
+Change-Id: Iedd85682a90980b26a2f9aac0a53fcf4e1da219e
+Signed-off-by: Isaac J. Manjarres <isaacm@codeaurora.org>
+---
+ drivers/dma-buf/heaps/Kconfig | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/Kconfig b/drivers/dma-buf/heaps/Kconfig
+index 1c46b90fd2f4..ad58616b34df 100644
+--- a/drivers/dma-buf/heaps/Kconfig
++++ b/drivers/dma-buf/heaps/Kconfig
+@@ -1,5 +1,7 @@
+-config DMABUF_HEAPS_DEFERRED_FREE
+-	tristate
++menuconfig DMABUF_HEAPS_DEFERRED_FREE
++	bool "DMA-BUF heaps deferred-free library"
++	help
++	  Choose this option to enable the DMA-BUF heaps deferred-free library.
+ 
+ config DMABUF_HEAPS_SYSTEM
+ 	tristate "DMA-BUF System Heap"
+-- 
+2.45.2
+

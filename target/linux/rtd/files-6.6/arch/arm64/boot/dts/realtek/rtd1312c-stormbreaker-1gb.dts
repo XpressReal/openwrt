@@ -1,0 +1,90 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2019-2021 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include "rtd1312c-stormbreaker.dtsi"
+
+/ {
+	compatible = "realtek,storm-breaker", "realtek,rtd1312c";
+	model = "Realtek Storm Breaker EVB(1GB, TEE)";
+
+	memory@40000 {
+		device_type = "memory";
+		reg = <0x00040000 0x3ffc0000>; /* 1 GiB */
+	};
+
+	chosen {
+		linux,initrd-start = <0x03100000>;
+		linux,initrd-end = <0x03500000>;
+	};
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&rfkill {
+	status = "okay";
+};
+
+&reserved_memory {
+	audio_heap@4200000 {
+		compatible = "audio_heap";
+		reg = <0x04200000 0xc0000>;
+	};
+
+	media_heap@4e00000 {
+		compatible = "media_heap";
+		reg = <0x04e00000 0x02000000>;
+	};
+
+	tee@10100000 {
+		reg = <0x10100000 0x1400000>;
+	};
+
+	linux,default_cma {
+		status = "disabled";
+	};
+
+	vo_dsc3 {
+		status = "disabled";
+	};
+
+	tp_ssc2 {
+		size = <0x400000>;
+		status = "disabled";
+	};
+
+	audio_ssc1 {
+		size = <0xa000000>;
+	};
+
+	video_dsc5 {
+		status = "disabled";
+	};
+
+	ao_ssc6 {
+		size = <0x01000000>;
+	};
+
+	ota_dsc8 {
+		size = <0x1c00000>;
+	};
+
+	fwstack_ssc4 {
+		size = <0x400000>;
+	};
+
+	hifi_b1p5 {
+		size = <0x6000000>;
+		status = "disabled";
+	};
+
+	vo_s_dsc3 {
+		size = <0x4000000>;
+	};
+};
+

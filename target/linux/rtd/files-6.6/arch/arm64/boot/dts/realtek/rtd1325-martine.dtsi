@@ -1,0 +1,524 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2023 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/soc/realtek,pm.h>
+#include <dt-bindings/thermal/thermal.h>
+#include <dt-bindings/regulator/anpec,apw888x.h>
+#include "rtd1325.dtsi"
+
+/ {
+	chosen {
+		stdout-path = "serial0:460800n8";
+		bootargs = "earlycon=uart8250,mmio32,0x98007800 console=ttyS0,460800 8250.nr_uarts=3 init=/init loglevel=4 max_loop=64 loop.max_part=7";
+	};
+
+	aliases {
+	};
+
+	cpu_supp: pwm-regulator {
+		compatible = "pwm-regulator";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm2_0_pins>;
+		pwms = <&pwm 2 8000>;
+		status = "okay";
+
+		regulator-name = "cpudvs";
+		regulator-min-microvolt = <750000>;
+		regulator-max-microvolt = <1200000>;
+		regulator-boot-on;
+		regulator-always-on;
+		regulator-ramp-delay = <400>;
+
+		voltage-table =
+			<1137500 6>,
+			<1125000 8>,
+			<1112500 11>,
+			<1100000 15>,
+			<1087500 19>,
+			<1075000 22>,
+			<1062500 26>,
+			<1050000 30>,
+			<1037500 32>,
+			<1025000 36>,
+			<1012500 40>,
+			<1000000 43>,
+			<987500 46>,
+			<975000 50>,
+			<962500 54>,
+			<950000 57>,
+			<937500 60>,
+			<925000 64>,
+			<912500 68>,
+			<900000 71>,
+			<887500 74>,
+			<875000 78>,
+			<862500 81>,
+			<850000 84>,
+			<837500 88>,
+			<825000 92>,
+			<812500 94>,
+			<800000 98>;
+	};
+};
+
+&audio_in_i2s {
+	pinctrl-names = "default";
+	pinctrl-0 = <&ai_loc0_6pins>;
+	status = "disabled";
+};
+
+&audio_out {
+	pinctrl-names = "default";
+	status = "okay";
+
+	dac {
+		status = "disabled";
+	};
+
+	spdif {
+		status = "disabled";
+	};
+};
+
+&audio_spdif_in {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spdif_optical_loc1_pin>;
+	status = "disabled";
+};
+
+&cec {
+	status = "okay";
+};
+
+&cp {
+	status = "okay";
+};
+
+&cpu_tm {
+	status = "okay";
+};
+
+&dbgprot {
+	status = "okay";
+};
+
+&emmc {
+	status = "okay";
+};
+
+&gpio {
+	status = "okay";
+};
+
+&hse {
+	status = "okay";
+};
+
+&dpi_tee {
+	temp-delta = <5000>;
+	status = "okay";
+
+	ddr4 {
+		zq-cal {
+			zq-vref = <0x000047d4 0x0000cd50 0x0000c730>;
+			zprog-values = <0x00300118 0x00090118 0x00260118 0x01180124 0x00180530>;
+			zq-ena-nocd2 = <0x0 0x0 0x0 0x0 0x1>;
+			zprog-nocd2 = <0x0 0x0 0x0 0x0 0x118>;
+		};
+
+		rx-dq-cal {
+			delta-width = <4>;
+			cal-time = <1000>;
+		};
+	};
+
+	lpddr4 {
+		zq-cal {
+			zq-vref = <0x0000c670 0x0000cd50 0x0000cc40>;
+			zprog-values = <0x00300030 0x00090030 0x00260018 0x000c0124>;
+			zq-ena-nocd2 = <0x1 0x1 0x1 0x1>;
+			zprog-nocd2 = <0x0000011d 0x0000011d 0x00000030 0x00000318>;
+		};
+
+		rx-dq-cal {
+			delta-width = <4>;
+			cal-time = <1000>;
+		};
+	};
+
+	ddr3 {
+		zq-cal {
+			zq-vref = <0x0000cd50 0x0000cd50 0x0000cd50>;
+			zprog-values = <0x00200118 0x00120118 0x00180118 0x01180124>;
+			zq-ena-nocd2 = <0x0 0x0 0x0 0x0>;
+			zprog-nocd2 = <0x0 0x0 0x0 0x0>;
+		};
+
+		rx-dq-cal {
+			delta-width = <4>;
+			cal-time = <1000>;
+		};
+	};
+};
+
+&i2c_0 {
+	status = "disabled";
+};
+
+&i2c_1 {
+	status = "okay";
+};
+
+&i2c_4 {
+	status = "okay";
+};
+
+&i2c_5 {
+	status = "okay";
+};
+
+&irda {
+	wakeup-key = <116>,<148>;
+	status = "okay";
+};
+
+&jpeg {
+	status = "okay";
+};
+
+&nic {
+	status = "disabled";
+};
+
+&pcie1 {
+	perst-gpios = <&gpio 57 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+};
+
+&pcie1_phy {
+	compatible = "realtek,rtd13xxe-pcie-slot1-phy";
+	status = "okay";
+};
+
+&pwm {
+	status = "okay";
+
+	pwm_2 {
+		enable = <1>;
+		clkout_div = <0x6b>;
+		clksrc_div = <0x00>;
+		duty_rate = <30>;
+	};
+};
+
+&reboot_mode {
+	status = "okay";
+};
+
+&rfkill {
+	status = "okay";
+};
+
+&lsadc {
+	status = "disabled";
+};
+
+&rng {
+	status = "okay";
+};
+
+&rtk_pm {
+	wakeup-flags = <STICK_NORMAL_MODE>;
+	wakeup-gpio-list = <58 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>,
+			   <60 GPIO_WAKEUP_ENABLE GPIO_WAKEUP_ACTIVE_LOW>;
+	wakeup-timer = <0>;
+	dco = <DCO_DISABLE>;
+	rtk-bt = <60>; /* for Realtek bluetooth only */
+	status = "okay";
+};
+
+&sdhci {
+	status = "disabled";
+};
+
+&sound {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&uart2 {
+	status = "okay";
+};
+
+&usb_manager {
+	status = "okay";
+};
+
+&usb_port0_usb2phy {
+	status = "disabled";
+};
+
+&usb_port0 {
+	//realtek,power-gpio = <&gpio 48 GPIO_ACTIVE_LOW>;
+	status = "disabled";
+};
+
+&usb_port1_usb2phy {
+	status = "disabled";
+};
+
+&usb_port1 {
+	//realtek,power-gpio = <&gpio 48 GPIO_ACTIVE_LOW>;
+	status = "disabled";
+};
+
+&usb_port2_usb2phy {
+	status = "okay";
+};
+
+&usb_port2 {
+	status = "okay";
+};
+
+&type_c {
+	status = "disabled";
+};
+
+&ve1 {
+	status = "okay";
+};
+
+&watchdog {
+	status = "okay";
+};
+
+&rtk_smcc {
+	status = "okay";
+};
+
+&gpu {
+	operating-points-v2 = <&gpu_opps>;
+	status = "okay";
+
+	gpu_opps: opp-table-gpu {
+		compatible = "operating-points-v2",
+			     "operating-points-v2-mali";
+
+		opp-400000000 {
+			opp-hz = /bits/ 64 <400000000>;
+			opp-hz-real = /bits/ 64 <400000000>;
+			opp-microvolt = <800000>;
+			opp-suspend;
+		};
+
+		opp-500000000 {
+			opp-hz = /bits/ 64 <500000000>;
+			opp-hz-real = /bits/ 64 <500000000>;
+			opp-microvolt = <800000>;
+		};
+
+		opp-580500000 {
+			opp-hz = /bits/ 64 <580500000>;
+			opp-hz-real = /bits/ 64 <580500000>;
+			opp-microvolt = <800000>;
+		};
+	};
+};
+
+&cpu0 {
+	cpu-supply = <&cpu_supp>;
+	operating-points-v2 = <&cpu_opps>;
+	#cooling-cells = <2>;
+};
+
+&cpu1 {
+	cpu-supply = <&cpu_supp>;
+	operating-points-v2 = <&cpu_opps>;
+	#cooling-cells = <2>;
+};
+
+&cpu2 {
+	cpu-supply = <&cpu_supp>;
+	operating-points-v2 = <&cpu_opps>;
+	#cooling-cells = <2>;
+};
+
+&cpu3 {
+	cpu-supply = <&cpu_supp>;
+	operating-points-v2 = <&cpu_opps>;
+	#cooling-cells = <2>;
+};
+
+&cpu_dvfs {
+	fss-opp-updated = <0>;
+	fss-volt-correct = <25000>;
+	fss-volt-step = <25000>;
+	fss-volt-min = <800000>;
+	fss-volt-max = <1100000>;
+
+	bsv-opp-updated = <0>;
+	bsv-volt-correct = <125000 137500 150000>;
+	bsv-volt-step = <25000>;
+	bsv-volt-min = <800000>;
+	bsv-volt-max = <1087500>;
+
+	cpu_opps: opp-table-cpu {
+		compatible = "operating-points-v2";
+		opp-shared;
+		opp800: opp-800000000 {
+			opp-hz = /bits/ 64 <800000000>;
+			opp-microvolt = <800000>;
+			opp-microvolt-bsv = <0>;
+			opp-microvolt-fss = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp900: opp-900000000 {
+			opp-hz = /bits/ 64 <900000000>;
+			opp-microvolt = <800000>;
+			opp-microvolt-bsv = <0>;
+			opp-microvolt-fss = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1000: opp-1000000000 {
+			opp-hz = /bits/ 64 <1000000000>;
+			opp-microvolt = <800000>;
+			opp-microvolt-bsv = <0>;
+			opp-microvolt-fss = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1100: opp-1100000000 {
+			opp-hz = /bits/ 64 <1100000000>;
+			opp-microvolt = <825000>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1200: opp-1200000000 {
+			opp-hz = /bits/ 64 <1200000000>;
+			opp-microvolt = <850000>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1300: opp-1300000000 {
+			opp-hz = /bits/ 64 <1300000000>;
+			opp-microvolt = <875000>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1400: opp-1400000000 {
+			opp-hz = /bits/ 64 <1400000000>;
+			opp-microvolt = <900000>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1500: opp-1500000000 {
+			opp-hz = /bits/ 64 <1500000000>;
+			opp-microvolt = <937500>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1600: opp-1600000000 {
+			opp-hz = /bits/ 64 <1600000000>;
+			opp-microvolt = <987500>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			status = "okay";
+		};
+
+		opp1700: opp-1700000000 {
+			opp-hz = /bits/ 64 <1700000000>;
+			opp-microvolt = <1037500>;
+			opp-microvolt-fss = <0>;
+			opp-microvolt-bsv = <0>;
+			clock-latency-ns = <150000>;
+			opp-suspend;
+			status = "okay";
+		};
+	};
+};
+
+&cpu_thermal {
+	trips {
+		cpu_alert0: cpu-alert0 {
+			temperature = <90000>;
+			hysteresis = <0>;
+			type = "passive";
+		};
+
+		cpu_alert1: cpu-alert1 {
+			temperature = <105000>;
+			hysteresis = <0>;
+			type = "passive";
+		};
+	};
+
+	cooling-maps {
+		cpu-map0 {
+			trip = <&cpu_alert0>;
+			cooling-device = <&cpu0 2 3>;
+			contribution = <70>;
+		};
+
+		cpu-map1 {
+			trip = <&cpu_alert1>;
+			cooling-device = <&cpu0 4 THERMAL_NO_LIMIT>;
+			contribution = <70>;
+		};
+	};
+};
+
+&vcpu {
+	status = "okay";
+};
+
+&sb2_inv {
+	status = "okay";
+};
+
+&rtc {
+	status = "okay";
+};
+
+&pm_alarm {
+	status = "okay";
+};
+
+
+&gpio_manager {
+
+	change-gpios = <&gpio 27 GPIO_ACTIVE_HIGH>;
+	change-gpios-value = <0>;  //suspend pull low, resume pull high
+	status = "okay";
+};

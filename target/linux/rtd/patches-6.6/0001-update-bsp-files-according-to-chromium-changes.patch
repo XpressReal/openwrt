@@ -1,0 +1,298 @@
+From 15539103e0c9cd5f7b0ccb5ba64d4cb5c0d22bc8 Mon Sep 17 00:00:00 2001
+From: Ken Tseng <ken.tseng@realtek.com>
+Date: Fri, 10 May 2024 18:07:26 +0800
+Subject: [PATCH] update bsp files according to chromium changes
+
+- BACKPORT/UPSTREAM: dma-buf-map: Rename to iosys-map
+- BACKPORT: drm/gem: rename GEM CMA helpers to GEM DMA helpers
+- UPSTREAM: drm/display: Move SCDC helpers into display-helper library
+- UPSTREAM: drm/display: Move HDCP helpers into display-helper module
+- UPSTREAM: drm: remove allow_fb_modifiers
+- UPSTREAM: drm/connector: Fix typo in output format
+- BACKPORT: FROMGIT: drm/dp: Move public DisplayPort headers into dp/
+-- BACKPORT: drm: Rename dp/ to display/
+- enable corresponding DRM_DISPLAY_x_HELPER
+---
+ drivers/dma-buf/heaps/rtk_heap_helpers.c   |  4 ++--
+ drivers/gpu/drm/realtek/Kconfig            |  6 +++++-
+ drivers/gpu/drm/realtek/rtk_cvbs.c         |  1 +
+ drivers/gpu/drm/realtek/rtk_dptx_core.c    |  1 +
+ drivers/gpu/drm/realtek/rtk_dptx_core.h    |  2 +-
+ drivers/gpu/drm/realtek/rtk_drm_crtc.h     |  2 +-
+ drivers/gpu/drm/realtek/rtk_drm_fb.c       |  2 +-
+ drivers/gpu/drm/realtek/rtk_drm_gem.c      | 12 ++++++------
+ drivers/gpu/drm/realtek/rtk_drm_plane.c    |  2 ++
+ drivers/gpu/drm/realtek/rtk_hdcp1_tee.h    |  2 +-
+ drivers/gpu/drm/realtek/rtk_hdcp2_tee.h    |  2 +-
+ drivers/gpu/drm/realtek/rtk_hdmi.c         |  2 +-
+ drivers/gpu/drm/realtek/rtk_hdmi.h         |  3 ++-
+ drivers/media/platform/rtk_dsi/rtk_dsi.c   |  4 ++--
+ drivers/soc/realtek/common/puwrap/puwrap.c |  2 +-
+ 15 files changed, 28 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/rtk_heap_helpers.c b/drivers/dma-buf/heaps/rtk_heap_helpers.c
+index b7e484f39d43e..4253125626c49 100644
+--- a/drivers/dma-buf/heaps/rtk_heap_helpers.c
++++ b/drivers/dma-buf/heaps/rtk_heap_helpers.c
+@@ -288,7 +288,7 @@ static void dma_heap_dma_buf_release(struct dma_buf *dmabuf)
+ 	dma_heap_buffer_destroy(buffer);
+ }
+ 
+-static int dma_heap_dma_buf_kmap(struct dma_buf *dmabuf, struct dma_buf_map *map)
++static int dma_heap_dma_buf_kmap(struct dma_buf *dmabuf, struct iosys_map *map)
+ {
+ 	struct dma_heap_buffer *heap_buffer = dmabuf->priv;
+ 	struct heap_helper_buffer *buffer = to_helper_buffer(heap_buffer);
+@@ -299,7 +299,7 @@ static int dma_heap_dma_buf_kmap(struct dma_buf *dmabuf, struct dma_buf_map *map
+ 	return 0;
+ }
+ 
+-static void dma_heap_dma_buf_kunmap(struct dma_buf *dmabuf, struct dma_buf_map *map)
++static void dma_heap_dma_buf_kunmap(struct dma_buf *dmabuf, struct iosys_map *map)
+ {
+ }
+ 
+diff --git a/drivers/gpu/drm/realtek/Kconfig b/drivers/gpu/drm/realtek/Kconfig
+index ca816ada215c8..aeb9964b72d59 100644
+--- a/drivers/gpu/drm/realtek/Kconfig
++++ b/drivers/gpu/drm/realtek/Kconfig
+@@ -1,7 +1,11 @@
+ config DRM_RTK
+ 	tristate "DRM Support for Realtek SoCs"
+ 	depends on DRM
+-	select DRM_GEM_CMA_HELPER
++	select DRM_GEM_DMA_HELPER
++	select DRM_DISPLAY_DP_HELPER
++	select DRM_DISPLAY_HDCP_HELPER
++	select DRM_DISPLAY_HDMI_HELPER
++	select DRM_DISPLAY_HELPER
+ 	select DRM_KMS_HELPER
+ 	help
+ 	  Choose this option if you have a Realtek SoCs.
+diff --git a/drivers/gpu/drm/realtek/rtk_cvbs.c b/drivers/gpu/drm/realtek/rtk_cvbs.c
+index dbde3b1f7e4b0..7221194abf8d8 100644
+--- a/drivers/gpu/drm/realtek/rtk_cvbs.c
++++ b/drivers/gpu/drm/realtek/rtk_cvbs.c
+@@ -1,4 +1,5 @@
+ 
++#include <drm/drm_edid.h>
+ #include <drm/drm_of.h>
+ #include <drm/drm_print.h>
+ #include <drm/drm_atomic_helper.h>
+diff --git a/drivers/gpu/drm/realtek/rtk_dptx_core.c b/drivers/gpu/drm/realtek/rtk_dptx_core.c
+index 3198368d1922c..2c48ff2d01158 100644
+--- a/drivers/gpu/drm/realtek/rtk_dptx_core.c
++++ b/drivers/gpu/drm/realtek/rtk_dptx_core.c
+@@ -12,6 +12,7 @@
+  * GNU General Public License for more details.
+  */
+ 
++#include <drm/drm_edid.h>
+ #include <drm/drm_of.h>
+ #include <drm/drm_print.h>
+ 
+diff --git a/drivers/gpu/drm/realtek/rtk_dptx_core.h b/drivers/gpu/drm/realtek/rtk_dptx_core.h
+index 8ede7225c749b..785a5e8263764 100644
+--- a/drivers/gpu/drm/realtek/rtk_dptx_core.h
++++ b/drivers/gpu/drm/realtek/rtk_dptx_core.h
+@@ -9,7 +9,7 @@
+ #include <linux/reset.h>
+ 
+ #include <drm/drm_crtc_helper.h>
+-#include <drm/drm_dp_helper.h>
++#include <drm/display/drm_dp_helper.h>
+ 
+ #include "rtk_drm_drv.h"
+ //#include "rtk_dptx_rpc.h"
+diff --git a/drivers/gpu/drm/realtek/rtk_drm_crtc.h b/drivers/gpu/drm/realtek/rtk_drm_crtc.h
+index e845f370ab705..8fbc71b5f917f 100644
+--- a/drivers/gpu/drm/realtek/rtk_drm_crtc.h
++++ b/drivers/gpu/drm/realtek/rtk_drm_crtc.h
+@@ -38,7 +38,7 @@ struct rtk_drm_plane {
+ 	struct dma_buf *dmabuf;
+ 	struct dma_buf_attachment *attach;
+ 	struct dma_buf_attachment *refclock_attach;
+-	struct dma_buf_map map;
++	struct iosys_map map;
+ #endif
+ 	struct dma_buf *refclock_dmabuf;
+ 	struct rtk_rpc_info *rpc_info;
+diff --git a/drivers/gpu/drm/realtek/rtk_drm_fb.c b/drivers/gpu/drm/realtek/rtk_drm_fb.c
+index 2aeb54efae24f..4910a4c32b980 100644
+--- a/drivers/gpu/drm/realtek/rtk_drm_fb.c
++++ b/drivers/gpu/drm/realtek/rtk_drm_fb.c
+@@ -16,6 +16,7 @@
+ #include <drm/drm_atomic_helper.h>
+ #include <drm/drm_gem.h>
+ #include <drm/drm_fourcc.h>
++#include <drm/drm_framebuffer.h>
+ 
+ #include "rtk_drm_fb.h"
+ #include "rtk_drm_gem.h"
+@@ -220,7 +221,6 @@ void rtk_drm_mode_config_init(struct drm_device *dev)
+ 		dev->mode_config.max_height = 4096;
+ 	}
+ 
+-	dev->mode_config.allow_fb_modifiers = true;
+ 	dev->mode_config.funcs = &rtk_drm_mode_config_funcs;
+ 	dev->mode_config.helper_private = &rtk_drm_mode_config_helpers;
+ }
+diff --git a/drivers/gpu/drm/realtek/rtk_drm_gem.c b/drivers/gpu/drm/realtek/rtk_drm_gem.c
+index 49cf17f501231..8e6f2fae99ae2 100644
+--- a/drivers/gpu/drm/realtek/rtk_drm_gem.c
++++ b/drivers/gpu/drm/realtek/rtk_drm_gem.c
+@@ -18,7 +18,7 @@
+ #include <drm/drm_device.h>
+ #include <drm/drm_debugfs.h>
+ #include <drm/drm_file.h>
+-#include <drm/drm_gem_cma_helper.h>
++#include <drm/drm_gem_dma_helper.h>
+ 
+ #include "rtk_drm_drv.h"
+ #include "rtk_drm_gem.h"
+@@ -224,16 +224,16 @@ void rtk_gem_free_object(struct drm_gem_object *gem_obj)
+ 	kfree(rtk_obj);
+ }
+ 
+-int rtk_gem_prime_vmap(struct drm_gem_object *gem_obj, struct dma_buf_map *map)
++int rtk_gem_prime_vmap(struct drm_gem_object *gem_obj, struct iosys_map *map)
+ {
+ 	struct rtk_gem_object *rtk_obj = to_rtk_gem_obj(gem_obj);
+ 
+-	dma_buf_map_set_vaddr(map, rtk_obj->vaddr);
++	iosys_map_set_vaddr(map, rtk_obj->vaddr);
+ 
+ 	return 0;
+ }
+ 
+-void rtk_gem_prime_vunmap(struct drm_gem_object *gem_obj, struct dma_buf_map *map)
++void rtk_gem_prime_vunmap(struct drm_gem_object *gem_obj, struct iosys_map *map)
+ {
+     /* Nothing to do */
+ }
+@@ -243,7 +243,7 @@ static const struct drm_gem_object_funcs rtk_gem_object_funcs = {
+ 	.get_sg_table = rtk_gem_prime_get_sg_table,
+ 	.vmap = rtk_gem_prime_vmap,
+ 	.vunmap	= rtk_gem_prime_vunmap,
+-	.vm_ops = &drm_gem_cma_vm_ops,
++	.vm_ops = &drm_gem_dma_vm_ops,
+ };
+ 
+ struct rtk_gem_object *
+@@ -273,7 +273,7 @@ struct drm_gem_object *rtk_gem_prime_import_sg_table(struct drm_device *dev,
+ 	struct rtk_gem_object *rtk_obj;
+ #ifdef CONFIG_RTK_METADATA_AUTOJUDGE
+ 	struct video_object *vobj;
+-	struct dma_buf_map map;
++	struct iosys_map map;
+ 	int ret;
+ #endif
+ 	if (sg->nents != 1)
+diff --git a/drivers/gpu/drm/realtek/rtk_drm_plane.c b/drivers/gpu/drm/realtek/rtk_drm_plane.c
+index c354310bcaf84..7d70985ac61a6 100644
+--- a/drivers/gpu/drm/realtek/rtk_drm_plane.c
++++ b/drivers/gpu/drm/realtek/rtk_drm_plane.c
+@@ -14,7 +14,9 @@
+ 
+ #include <drm/drm_plane_helper.h>
+ #include <drm/drm_atomic_helper.h>
++#include <drm/drm_blend.h>
+ #include <drm/drm_fourcc.h>
++#include <drm/drm_framebuffer.h>
+ #include <drm/drm_vblank.h>	// DEBUG: struct drm_pending_vblank_event
+ #include <linux/dma-map-ops.h>
+ #include <linux/mm_types.h>
+diff --git a/drivers/gpu/drm/realtek/rtk_hdcp1_tee.h b/drivers/gpu/drm/realtek/rtk_hdcp1_tee.h
+index fe5d570d2c34e..12c029796dc9c 100644
+--- a/drivers/gpu/drm/realtek/rtk_hdcp1_tee.h
++++ b/drivers/gpu/drm/realtek/rtk_hdcp1_tee.h
+@@ -8,7 +8,7 @@
+ 
+ #include <linux/tee_drv.h>
+ #include <uapi/linux/tee.h>
+-#include <drm/drm_hdcp.h>
++#include <drm/display/drm_hdcp_helper.h>
+ 
+ #define HDCP14_KEY_SIZE		288
+ 
+diff --git a/drivers/gpu/drm/realtek/rtk_hdcp2_tee.h b/drivers/gpu/drm/realtek/rtk_hdcp2_tee.h
+index 8206fdf943226..272148e0e4983 100644
+--- a/drivers/gpu/drm/realtek/rtk_hdcp2_tee.h
++++ b/drivers/gpu/drm/realtek/rtk_hdcp2_tee.h
+@@ -9,7 +9,7 @@
+ 
+ #include <linux/tee_drv.h>
+ #include <uapi/linux/tee.h>
+-#include <drm/drm_hdcp.h>
++#include <drm/display/drm_hdcp_helper.h>
+ 
+ struct rtk_hdcp2_tee;
+ 
+diff --git a/drivers/gpu/drm/realtek/rtk_hdmi.c b/drivers/gpu/drm/realtek/rtk_hdmi.c
+index eaaa53ea0588e..81599794544c0 100644
+--- a/drivers/gpu/drm/realtek/rtk_hdmi.c
++++ b/drivers/gpu/drm/realtek/rtk_hdmi.c
+@@ -415,7 +415,7 @@ static unsigned int send_scdc_tmdsconfig(struct rtk_hdmi *hdmi,
+ 		tmdsconfig = SCDC_SCRAMBLING_ENABLE;
+ 	}
+ 
+-	if ((display_info->color_formats & DRM_COLOR_FORMAT_YCRCB420) ||
++	if ((display_info->color_formats & DRM_COLOR_FORMAT_YCBCR420) ||
+ 		(hdmi->hdcp.sink_hdcp_ver == HDCP_2x))
+ 		scdc->supported = 1;
+ 
+diff --git a/drivers/gpu/drm/realtek/rtk_hdmi.h b/drivers/gpu/drm/realtek/rtk_hdmi.h
+index 65d47326ea1f3..95f0603a8b99b 100644
+--- a/drivers/gpu/drm/realtek/rtk_hdmi.h
++++ b/drivers/gpu/drm/realtek/rtk_hdmi.h
+@@ -6,10 +6,11 @@
+ #ifndef RTK_HDMI_H_
+ #define RTK_HDMI_H_
+ 
++#include <drm/drm_edid.h>
+ #include <drm/drm_atomic_helper.h>
+ #include <drm/drm_crtc_helper.h>
+ #include <drm/drm_probe_helper.h>
+-#include <drm/drm_scdc_helper.h>
++#include <drm/display/drm_scdc_helper.h>
+ 
+ #include "rtk_drm_drv.h"
+ #include "rtk_hdcp.h"
+diff --git a/drivers/media/platform/rtk_dsi/rtk_dsi.c b/drivers/media/platform/rtk_dsi/rtk_dsi.c
+index 82ad19487b7e4..5436f0f74aafe 100644
+--- a/drivers/media/platform/rtk_dsi/rtk_dsi.c
++++ b/drivers/media/platform/rtk_dsi/rtk_dsi.c
+@@ -251,7 +251,7 @@ static int rpc_dsi_query_tv_system(struct rtk_dsi *dsi,
+ 	u32 RPC_ret;
+ 	phys_addr_t dat;
+ 	unsigned int offset;
+-	struct dma_buf_map map;
++	struct iosys_map map;
+ 	struct device *dev = dsi->dev;
+ 
+ 	i_rpc = dma_alloc_coherent(dev, SZ_4K, &dat, GFP_KERNEL);
+@@ -310,7 +310,7 @@ static int rpc_dsi_config_tv_system(struct rtk_dsi *dsi,
+ 	int ret;
+ 	phys_addr_t dat;
+ 	u32 RPC_ret;
+-	struct dma_buf_map map;
++	struct iosys_map map;
+ 	struct device *dev = dsi->dev;
+ 
+ 	rpc = dma_alloc_coherent(dev, SZ_4K, &dat, GFP_KERNEL);
+diff --git a/drivers/soc/realtek/common/puwrap/puwrap.c b/drivers/soc/realtek/common/puwrap/puwrap.c
+index ee7da958bca1b..eea1e89b30a09 100755
+--- a/drivers/soc/realtek/common/puwrap/puwrap.c
++++ b/drivers/soc/realtek/common/puwrap/puwrap.c
+@@ -301,7 +301,7 @@ unsigned long pu_mmap_kernel_buffer(unsigned long phys_addr, unsigned int size)
+ {
+ #ifdef USE_ION_ALLOCATOR
+ 	unsigned long ret = 0;
+-	struct dma_buf_map map;
++	struct iosys_map map;
+ 
+ 	if (!size)
+ 		return 0;
+-- 
+2.42.0
+

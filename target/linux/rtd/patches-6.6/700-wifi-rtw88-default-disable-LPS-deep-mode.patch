@@ -1,0 +1,42 @@
+From 0ea5c0e82b5d7fd6e2da77a827de21ad99845129 Mon Sep 17 00:00:00 2001
+From: Tsai-Wei Wu <wu.tsaiwei@realtek.com>
+Date: Fri, 30 Aug 2024 16:10:33 +0800
+Subject: [PATCH] wifi: rtw88: default disable LPS deep mode
+
+Lot of below messages are seen:
+
+ rtw_8822cs mmc2:0001:1: firmware failed to leave lps state
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: firmware failed to leave lps state
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+ rtw_8822cs mmc2:0001:1: failed to send h2c command
+
+Some solutions from Internet (https://github.com/lwfinger/rtw88/issues/61) is
+to disable LPS mode.
+---
+ drivers/net/wireless/realtek/rtw88/main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/realtek/rtw88/main.c b/drivers/net/wireless/realtek/rtw88/main.c
+index 63673005c2fb..f86a8657f4e5 100644
+--- a/drivers/net/wireless/realtek/rtw88/main.c
++++ b/drivers/net/wireless/realtek/rtw88/main.c
+@@ -20,7 +20,7 @@
+ #include "sar.h"
+ #include "sdio.h"
+ 
+-bool rtw_disable_lps_deep_mode;
++bool rtw_disable_lps_deep_mode = true;
+ EXPORT_SYMBOL(rtw_disable_lps_deep_mode);
+ bool rtw_bf_support = true;
+ unsigned int rtw_debug_mask;
+-- 
+2.45.2
+

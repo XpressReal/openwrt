@@ -1,0 +1,163 @@
+From 0825a2746ea55ebe22e105c9c4b2b025060be9f0 Mon Sep 17 00:00:00 2001
+From: John Stultz <john.stultz@linaro.org>
+Date: Thu, 6 Jun 2019 00:26:20 +0000
+Subject: [PATCH 28/35] ANDROID: dma-buf: system_heap: Add pagepool support to
+ system heap
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Utilize the dmabuf pagepool code to speed up allocation
+performance.
+
+This is similar to the ION pagepool usage, but tries to
+utilize generic code instead of a custom implementation.
+
+Cc: Daniel Vetter <daniel@ffwll.ch>
+Cc: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: Liam Mark <lmark@codeaurora.org>
+Cc: Chris Goldsworthy <cgoldswo@codeaurora.org>
+Cc: Laura Abbott <labbott@kernel.org>
+Cc: Brian Starkey <Brian.Starkey@arm.com>
+Cc: Hridya Valsaraju <hridya@google.com>
+Cc: Suren Baghdasaryan <surenb@google.com>
+Cc: Sandeep Patil <sspatil@google.com>
+Cc: Daniel Mentz <danielmentz@google.com>
+Cc: Ørjan Eide <orjan.eide@arm.com>
+Cc: Robin Murphy <robin.murphy@arm.com>
+Cc: Ezequiel Garcia <ezequiel@collabora.com>
+Cc: Simon Ser <contact@emersion.fr>
+Cc: James Jones <jajones@nvidia.com>
+Cc: linux-media@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Bug: 168742043
+Change-Id: I36fce5d350edcff59bf83ab213b687aec8cb9970
+---
+v2:
+* Fix build issue caused by selecting PAGE_POOL w/o NET
+  as Reported-by: kernel test robot <lkp@intel.com>
+v3:
+* Simplify the page zeroing logic a bit by using kmap_atomic
+  instead of vmap as suggested by Daniel Mentz
+v5:
+* Shift away from networking page pool completely to
+  dmabuf page pool implementation
+---
+ drivers/dma-buf/heaps/Kconfig       |  1 +
+ drivers/dma-buf/heaps/system_heap.c | 49 ++++++++++++++++++++++++++---
+ 2 files changed, 46 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/dma-buf/heaps/Kconfig b/drivers/dma-buf/heaps/Kconfig
+index c90fdb97a352..9c9cfdbfb09b 100644
+--- a/drivers/dma-buf/heaps/Kconfig
++++ b/drivers/dma-buf/heaps/Kconfig
+@@ -11,6 +11,7 @@ menuconfig DMABUF_HEAPS_PAGE_POOL
+ config DMABUF_HEAPS_SYSTEM
+ 	tristate "DMA-BUF System Heap"
+ 	depends on DMABUF_HEAPS
++	select DMABUF_HEAPS_PAGE_POOL
+ 	help
+ 	  Choose this option to enable the system dmabuf heap. The system heap
+ 	  is backed by pages from the buddy allocator. If in doubt, say Y.
+diff --git a/drivers/dma-buf/heaps/system_heap.c b/drivers/dma-buf/heaps/system_heap.c
+index 3655296c5760..6cb7b59c0872 100644
+--- a/drivers/dma-buf/heaps/system_heap.c
++++ b/drivers/dma-buf/heaps/system_heap.c
+@@ -21,6 +21,8 @@
+ #include <linux/slab.h>
+ #include <linux/vmalloc.h>
+ 
++#include "page_pool.h"
++
+ static struct dma_heap *sys_heap;
+ static struct dma_heap *sys_uncached_heap;
+ 
+@@ -58,6 +60,7 @@ static gfp_t order_flags[] = {HIGH_ORDER_GFP, HIGH_ORDER_GFP, LOW_ORDER_GFP};
+  */
+ static const unsigned int orders[] = {8, 4, 0};
+ #define NUM_ORDERS ARRAY_SIZE(orders)
++struct dmabuf_page_pool *pools[NUM_ORDERS];
+ 
+ static struct sg_table *dup_sg_table(struct sg_table *table)
+ {
+@@ -304,18 +307,43 @@ static void system_heap_vunmap(struct dma_buf *dmabuf, struct iosys_map *map)
+ 	iosys_map_clear(map);
+ }
+ 
++static int system_heap_zero_buffer(struct system_heap_buffer *buffer)
++{
++	struct sg_table *sgt = &buffer->sg_table;
++	struct sg_page_iter piter;
++	struct page *p;
++	void *vaddr;
++	int ret = 0;
++
++	for_each_sgtable_page(sgt, &piter, 0) {
++		p = sg_page_iter_page(&piter);
++		vaddr = kmap_atomic(p);
++		memset(vaddr, 0, PAGE_SIZE);
++		kunmap_atomic(vaddr);
++	}
++
++	return ret;
++}
++
+ static void system_heap_dma_buf_release(struct dma_buf *dmabuf)
+ {
+ 	struct system_heap_buffer *buffer = dmabuf->priv;
+ 	struct sg_table *table;
+ 	struct scatterlist *sg;
+-	int i;
++	int i, j;
++
++	/* Zero the buffer pages before adding back to the pool */
++	system_heap_zero_buffer(buffer);
+ 
+ 	table = &buffer->sg_table;
+ 	for_each_sgtable_sg(table, sg, i) {
+ 		struct page *page = sg_page(sg);
+ 
+-		__free_pages(page, compound_order(page));
++		for (j = 0; j < NUM_ORDERS; j++) {
++			if (compound_order(page) == orders[j])
++				break;
++		}
++		dmabuf_page_pool_free(pools[j], page);
+ 	}
+ 	sg_free_table(table);
+ 	kfree(buffer);
+@@ -345,8 +373,7 @@ static struct page *alloc_largest_available(unsigned long size,
+ 			continue;
+ 		if (max_order < orders[i])
+ 			continue;
+-
+-		page = alloc_pages(order_flags[i], orders[i]);
++		page = dmabuf_page_pool_alloc(pools[i]);
+ 		if (!page)
+ 			continue;
+ 		return page;
+@@ -491,6 +518,20 @@ static struct dma_heap_ops system_uncached_heap_ops = {
+ static int system_heap_create(void)
+ {
+ 	struct dma_heap_export_info exp_info;
++	int i;
++
++	for (i = 0; i < NUM_ORDERS; i++) {
++		pools[i] = dmabuf_page_pool_create(order_flags[i], orders[i]);
++
++		if (IS_ERR(pools[i])) {
++			int j;
++
++			pr_err("%s: page pool creation failed!\n", __func__);
++			for (j = 0; j < i; j++)
++				dmabuf_page_pool_destroy(pools[j]);
++			return PTR_ERR(pools[i]);
++		}
++	}
+ 
+ 	exp_info.name = "system";
+ 	exp_info.ops = &system_heap_ops;
+-- 
+2.45.2
+

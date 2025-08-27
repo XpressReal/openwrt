@@ -1,0 +1,33 @@
+From 5dc111476f618e3addf440308fe277311dcc135d Mon Sep 17 00:00:00 2001
+From: Hyesoo Yu <hyesoo.yu@samsung.com>
+Date: Thu, 24 Dec 2020 15:52:38 +0900
+Subject: [PATCH 15/35] ANDROID: dma-buf: heap: export dma_heap_put
+
+dma_heap_put() symbols is needed for vendor loadable modules
+to drop reference count after dma_heap_find().
+
+Bug: 176262479
+Signed-off-by: Hyesoo Yu <hyesoo.yu@samsung.com>
+Change-Id: I180698371d16a9e14ed648687e77a68dc3afc951
+Signed-off-by: Hridya Valsaraju <hridya@google.com>
+(cherry picked from commit c87cc4b2e554a670e00bdf08ad74e7596167d1c8)
+Signed-off-by: Palmer Dabbelt <palmerdabbelt@google.com>
+---
+ drivers/dma-buf/dma-heap.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/dma-buf/dma-heap.c b/drivers/dma-buf/dma-heap.c
+index ecf4ff198a1c..a174e262d75c 100644
+--- a/drivers/dma-buf/dma-heap.c
++++ b/drivers/dma-buf/dma-heap.c
+@@ -291,6 +291,7 @@ void dma_heap_put(struct dma_heap *h)
+ 	kref_put(&h->refcount, dma_heap_release);
+ 	mutex_unlock(&heap_list_lock);
+ }
++EXPORT_SYMBOL_GPL(dma_heap_put);
+ 
+ /**
+  * dma_heap_get_dev() - get device struct for the heap
+-- 
+2.45.2
+

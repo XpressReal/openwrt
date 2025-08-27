@@ -1,0 +1,210 @@
+From 943c6133cee0c75275606a1fe6afab5bcd149f77 Mon Sep 17 00:00:00 2001
+From: "ray.tang" <ray.tang@realtek.com>
+Date: Mon, 28 Oct 2024 08:02:55 +0000
+Subject: [PATCH] add-innolux-n080jce-g41-1200x1920-panel
+
+[JIRA     ID]
+[Modify Desc]
+---
+ drivers/gpu/drm/panel/Kconfig                 |   7 +
+ drivers/gpu/drm/panel/Makefile                |   1 +
+ .../gpu/drm/panel/panel-innolux-n080jce-g41.c | 157 ++++++++++++++++++
+ 3 files changed, 165 insertions(+)
+ create mode 100644 drivers/gpu/drm/panel/panel-innolux-n080jce-g41.c
+
+diff --git a/drivers/gpu/drm/panel/Kconfig b/drivers/gpu/drm/panel/Kconfig
+index 3a2f4a9f1d46..658b1ded9bdc 100644
+--- a/drivers/gpu/drm/panel/Kconfig
++++ b/drivers/gpu/drm/panel/Kconfig
+@@ -212,6 +212,13 @@ config DRM_PANEL_INNOLUX_EJ030NA
+           320x480 3.0" panel as found in the RS97 V2.1, RG300(non-ips)
+           and LDK handheld gaming consoles.
+ 
++config DRM_PANEL_INNOLUX_N080JCE_G41
++	tristate "Innolux N080JCE-G41 1200x1920 LCD panel"
++	depends on DRM_MIPI_DSI
++	help
++	  Say Y if you want to enable support for Innolux N080JCE-G41
++	  1200x1920 LCD panel.
++
+ config DRM_PANEL_INNOLUX_P079ZCA
+ 	tristate "Innolux P079ZCA panel"
+ 	depends on OF
+diff --git a/drivers/gpu/drm/panel/Makefile b/drivers/gpu/drm/panel/Makefile
+index 433e93d57949..5ffef7b52725 100644
+--- a/drivers/gpu/drm/panel/Makefile
++++ b/drivers/gpu/drm/panel/Makefile
+@@ -19,6 +19,7 @@ obj-$(CONFIG_DRM_PANEL_ILITEK_IL9322) += panel-ilitek-ili9322.o
+ obj-$(CONFIG_DRM_PANEL_ILITEK_ILI9341) += panel-ilitek-ili9341.o
+ obj-$(CONFIG_DRM_PANEL_ILITEK_ILI9881C) += panel-ilitek-ili9881c.o
+ obj-$(CONFIG_DRM_PANEL_INNOLUX_EJ030NA) += panel-innolux-ej030na.o
++obj-$(CONFIG_DRM_PANEL_INNOLUX_N080JCE_G41) += panel-innolux-n080jce-g41.o
+ obj-$(CONFIG_DRM_PANEL_INNOLUX_P079ZCA) += panel-innolux-p079zca.o
+ obj-$(CONFIG_DRM_PANEL_JADARD_JD9365DA_H3) += panel-jadard-jd9365da-h3.o
+ obj-$(CONFIG_DRM_PANEL_JDI_LT070ME05000) += panel-jdi-lt070me05000.o
+diff --git a/drivers/gpu/drm/panel/panel-innolux-n080jce-g41.c b/drivers/gpu/drm/panel/panel-innolux-n080jce-g41.c
+new file mode 100644
+index 000000000000..469c4b92d4c8
+--- /dev/null
++++ b/drivers/gpu/drm/panel/panel-innolux-n080jce-g41.c
+@@ -0,0 +1,157 @@
++/*
++ * Innolux N080JCE-G41 Panel Driver
++ *
++ * Copyright (c) 2024 Realtek Semiconductor Corp.
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/fb.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/of_device.h>
++
++
++#include <drm/drm_mipi_dsi.h>
++#include <drm/drm_modes.h>
++#include <drm/drm_panel.h>
++
++#include <video/mipi_display.h>
++
++struct n080jce_g41 {
++	struct drm_panel panel;
++	struct mipi_dsi_device	*dsi;
++};
++
++static inline struct n080jce_g41 *panel_to_n080jce_g41(struct drm_panel *panel)
++{
++	return container_of(panel, struct n080jce_g41, panel);
++}
++
++static int n080jce_g41_prepare(struct drm_panel *panel)
++{
++	return 0;
++}
++
++static int n080jce_g41_enable(struct drm_panel *panel)
++{
++	return 0;
++}
++
++static int n080jce_g41_disable(struct drm_panel *panel)
++{
++	return 0;
++}
++
++static int n080jce_g41_unprepare(struct drm_panel *panel)
++{
++	return 0;
++}
++
++static const struct drm_display_mode n080jce_g41_mode = {
++	.clock = 176863680 / 1000,
++	.hdisplay = 1200,
++	.hsync_start = 1200 + 162,
++	.hsync_end = 1200 + 162 + 122,
++	.htotal = 1200 + 162 + 122 + 4,
++	.vdisplay = 1920,
++	.vsync_start = 1920 + 35,
++	.vsync_end = 1920 + 35 + 25,
++	.vtotal = 1920 + 35 + 25 + 1,
++
++	.width_mm = 120,
++	.height_mm = 192,
++};
++
++static int n080jce_g41_get_modes(struct drm_panel *panel,
++			      struct drm_connector *connector)
++{
++	struct n080jce_g41 *ctx = panel_to_n080jce_g41(panel);
++	const struct drm_display_mode *m = &n080jce_g41_mode;
++	struct drm_display_mode *mode;
++
++	mode = drm_mode_duplicate(connector->dev, m);
++	if (!mode) {
++		dev_err(&ctx->dsi->dev, "failed to add mode %ux%ux@%u\n",
++			m->hdisplay,
++			m->vdisplay,
++			drm_mode_vrefresh(m));
++		return -ENOMEM;
++	}
++
++	drm_mode_set_name(mode);
++
++	mode->type = DRM_MODE_TYPE_DRIVER | DRM_MODE_TYPE_PREFERRED;
++	drm_mode_probed_add(connector, mode);
++
++	connector->display_info.width_mm = mode->width_mm;
++	connector->display_info.height_mm = mode->height_mm;
++
++	return 1;
++}
++
++static const struct drm_panel_funcs n080jce_g41_funcs = {
++	.prepare	= n080jce_g41_prepare,
++	.unprepare	= n080jce_g41_unprepare,
++	.enable		= n080jce_g41_enable,
++	.disable	= n080jce_g41_disable,
++	.get_modes	= n080jce_g41_get_modes,
++};
++
++static int n080jce_g41_dsi_probe(struct mipi_dsi_device *dsi)
++{
++	struct n080jce_g41 *ctx;
++	int ret;
++
++	ctx = devm_kzalloc(&dsi->dev, sizeof(*ctx), GFP_KERNEL);
++	if (!ctx)
++		return -ENOMEM;
++	mipi_dsi_set_drvdata(dsi, ctx);
++	ctx->dsi = dsi;
++
++	drm_panel_init(&ctx->panel, &dsi->dev, &n080jce_g41_funcs,
++		       DRM_MODE_CONNECTOR_DSI);
++
++	drm_panel_add(&ctx->panel);
++
++	dsi->mode_flags = MIPI_DSI_MODE_VIDEO_SYNC_PULSE;
++	dsi->format = MIPI_DSI_FMT_RGB888;
++	dsi->lanes = 4;
++
++	ret = mipi_dsi_attach(dsi);
++	if (ret)
++		dev_err(&dsi->dev, "failed to attach dsi to host: %d\n", ret);
++
++	return ret;
++}
++
++static void n080jce_g41_dsi_remove(struct mipi_dsi_device *dsi)
++{
++	struct n080jce_g41 *ctx = mipi_dsi_get_drvdata(dsi);
++
++	mipi_dsi_detach(dsi);
++	drm_panel_remove(&ctx->panel);
++}
++
++static const struct of_device_id n080jce_g41_of_match[] = {
++	{ .compatible = "innolux,n080jce-g41"},
++	{ }
++};
++MODULE_DEVICE_TABLE(of, n080jce_g41_of_match);
++
++static struct mipi_dsi_driver n080jce_g41_dsi_driver = {
++	.probe		= n080jce_g41_dsi_probe,
++	.remove		= n080jce_g41_dsi_remove,
++	.driver = {
++		.name		= "panel-n080jce-g41",
++		.of_match_table	= n080jce_g41_of_match,
++	},
++};
++module_mipi_dsi_driver(n080jce_g41_dsi_driver);
++
++MODULE_AUTHOR("Ray Tang <ray.tang@realtek.com>");
++MODULE_DESCRIPTION("Innolux N080JCE-G41 Panel Driver");
++MODULE_LICENSE("GPL v2");
+-- 
+2.44.1
+

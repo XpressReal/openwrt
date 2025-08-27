@@ -1,0 +1,56 @@
+From f94dbe9e409907f497958ee6b9d5d4c21fa9f6ad Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 17 Nov 2022 16:42:46 +0800
+Subject: [PATCH] pci: controller: add pcie host driver for Realtek DHC SoCs
+
+Change-Id: I1abda74f8a2b47d353c1456ae3ac9541252cf463
+---
+ drivers/pci/controller/Kconfig  | 18 ++++++++++++++++++
+ drivers/pci/controller/Makefile |  2 ++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/drivers/pci/controller/Kconfig b/drivers/pci/controller/Kconfig
+index c0c3f2824990..89cb8eb7ead7 100644
+--- a/drivers/pci/controller/Kconfig
++++ b/drivers/pci/controller/Kconfig
+@@ -292,6 +292,24 @@ config PCIE_ROCKCHIP_EP
+ 	  endpoint mode on Rockchip SoC. There is 1 internal PCIe port
+ 	  available to support GEN2 with 4 slots.
+ 
++config PCIE_RTD
++	tristate "Realtek PCIe host controller"
++	select PHY_RTD_PCIE
++	help
++	  Realtek PCIe host controller support.
++
++config RTD16XXB_PCIE1_ACP
++	bool "Realtek PCIe host controller ACP support"
++	depends on PCIE_RTD
++	help
++	  Enable Realtek RTD16XXB PCIE1 ACP.
++
++config PCIE_RTD_TRANS
++	bool "Realtek PCIe tanslation"
++	depends on PCIE_RTD
++	help
++	  Realtek PCIe MMIO translation support.
++ 
+ config PCI_V3_SEMI
+ 	bool "V3 Semiconductor PCI controller"
+ 	depends on OF
+diff --git a/drivers/pci/controller/Makefile b/drivers/pci/controller/Makefile
+index 37c8663de7fe..2eb8e062c79d 100644
+--- a/drivers/pci/controller/Makefile
++++ b/drivers/pci/controller/Makefile
+@@ -30,6 +30,8 @@ obj-$(CONFIG_PCIE_ALTERA_MSI) += pcie-altera-msi.o
+ obj-$(CONFIG_PCIE_ROCKCHIP) += pcie-rockchip.o
+ obj-$(CONFIG_PCIE_ROCKCHIP_EP) += pcie-rockchip-ep.o
+ obj-$(CONFIG_PCIE_ROCKCHIP_HOST) += pcie-rockchip-host.o
++obj-$(CONFIG_PCIE_RTD) += pcie-rtd.o
++obj-$(CONFIG_PCIE_RTD_TRANS) += pcie-rtd-trans.o
+ obj-$(CONFIG_PCIE_MEDIATEK) += pcie-mediatek.o
+ obj-$(CONFIG_PCIE_MEDIATEK_GEN3) += pcie-mediatek-gen3.o
+ obj-$(CONFIG_PCIE_MICROCHIP_HOST) += pcie-microchip-host.o
+-- 
+2.45.2
+

@@ -1,0 +1,66 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2023 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include "rtd1325-martine.dtsi"
+
+/ {
+	compatible = "realtek,martine", "realtek,rtd1325";
+	model = "Realtek Martine EVB (1GB LPDDR)";
+
+	memory@40000 {
+		device_type = "memory";
+		reg = <0x00040000 0x3ffc0000>; /* 1 GB */
+	};
+};
+
+&reserved_memory {
+	tee: tee@10000000 {
+		reg = <0x10000000 0x01800000>;	/* TEE: 24MB */
+		no-map;
+	};
+
+	vo_dsc3 {
+		size = <0x0f000000>;		/* VO: 160MB + 66MB(gen) + extra*/
+	};
+
+	tp_ssc2 {
+		size = <0x00400000>;		/* TP: 4MB(CAS legacy path 2K) */
+	};
+
+	audio_ssc1 {
+		size = <0x00400000>;		/* AUDIO: 4MB */
+	};
+
+	video_dsc5 {
+		size = <0x03400000>;		/* VIDEO: 52MB */
+	};
+
+	ao_ssc6 {
+		size = <0x00400000>;		/* AO: 4MB */
+	};
+
+	ota_dsc8 {
+		size = <0x01400000>;		/* OTA: 20MB */
+	};
+
+	hifi_b1p5 {
+		status = "disabled";		/* HIFI: Disabled */
+	};
+
+	vo_s_dsc3 {
+		status = "disabled";		/* VO2: Disabled */
+	};
+
+	tee {
+		status = "disabled";
+	};
+
+	hifi {
+		status = "disabled";		/* HIFI fw: Disabled */
+	};
+};
+

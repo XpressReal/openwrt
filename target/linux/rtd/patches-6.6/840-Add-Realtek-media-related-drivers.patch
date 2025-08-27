@@ -1,0 +1,75 @@
+From 40bc2e8aa9e88b5fb41c8b8614e605dedc2196ce Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 10 Nov 2022 17:34:45 +0800
+Subject: [PATCH] media: platform: add Realtek media related drivers
+
+Change-Id: I611e7bae7702277f0994263340cc6c12f472a013
+---
+ drivers/media/cec/platform/Kconfig  | 10 ++++++++++
+ drivers/media/cec/platform/Makefile |  1 +
+ drivers/media/platform/Kconfig      |  2 ++
+ drivers/media/platform/Makefile     |  2 ++
+ 4 files changed, 15 insertions(+)
+
+diff --git a/drivers/media/cec/platform/Kconfig b/drivers/media/cec/platform/Kconfig
+index b672d3142eb7..7b3678164c34 100644
+--- a/drivers/media/cec/platform/Kconfig
++++ b/drivers/media/cec/platform/Kconfig
+@@ -52,6 +52,16 @@ config CEC_GPIO
+ 	  The CEC bus is present in the HDMI connector and enables communication
+ 	  between compatible devices.
+ 
++config CEC_RTK
++	tristate "Realtek HDMI CEC driver"
++	select CEC_CORE
++	select CEC_NOTIFIER
++	help
++	  This is a driver for Realtek HDMI CEC interface. It uses the
++	  generic CEC framework interface.
++	  CEC bus is present in the HDMI connector and enables communication
++	  between compatible devices.
++
+ config CEC_SAMSUNG_S5P
+ 	tristate "Samsung S5P CEC driver"
+ 	depends on ARCH_EXYNOS || COMPILE_TEST
+diff --git a/drivers/media/cec/platform/Makefile b/drivers/media/cec/platform/Makefile
+index a51e98ab4958..47a403ff78d9 100644
+--- a/drivers/media/cec/platform/Makefile
++++ b/drivers/media/cec/platform/Makefile
+@@ -7,6 +7,7 @@
+ obj-$(CONFIG_CEC_CROS_EC) += cros-ec/
+ obj-$(CONFIG_CEC_GPIO) += cec-gpio/
+ obj-y += meson/
++obj-$(CONFIG_CEC_RTK) += realtek/
+ obj-$(CONFIG_CEC_SAMSUNG_S5P) += s5p/
+ obj-$(CONFIG_CEC_SECO) += seco/
+ obj-$(CONFIG_CEC_STI) += sti/
+diff --git a/drivers/media/platform/Kconfig b/drivers/media/platform/Kconfig
+index ee579916f874..9941b3d437ce 100644
+--- a/drivers/media/platform/Kconfig
++++ b/drivers/media/platform/Kconfig
+@@ -77,6 +77,8 @@ source "drivers/media/platform/nvidia/Kconfig"
+ source "drivers/media/platform/nxp/Kconfig"
+ source "drivers/media/platform/qcom/Kconfig"
+ source "drivers/media/platform/renesas/Kconfig"
++source "drivers/media/platform/rtk_dsi/Kconfig"
++source "drivers/media/platform/rtk_tpdemux/Kconfig"
+ source "drivers/media/platform/rockchip/Kconfig"
+ source "drivers/media/platform/samsung/Kconfig"
+ source "drivers/media/platform/st/Kconfig"
+diff --git a/drivers/media/platform/Makefile b/drivers/media/platform/Makefile
+index 5453bb868e67..cfeac7c30c85 100644
+--- a/drivers/media/platform/Makefile
++++ b/drivers/media/platform/Makefile
+@@ -20,6 +20,8 @@ obj-y += nvidia/
+ obj-y += nxp/
+ obj-y += qcom/
+ obj-y += renesas/
++obj-y += rtk_dsi/
++obj-y += rtk_tpdemux/
+ obj-y += rockchip/
+ obj-y += samsung/
+ obj-y += st/
+-- 
+2.34.1
+

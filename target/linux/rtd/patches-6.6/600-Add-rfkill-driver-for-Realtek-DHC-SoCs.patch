@@ -1,0 +1,44 @@
+From db8ace5f457b207fe1936c99c61ac2ae57f962f6 Mon Sep 17 00:00:00 2001
+From: James Tai <james.tai@realtek.com>
+Date: Thu, 17 Nov 2022 16:05:12 +0800
+Subject: [PATCH] bluetooth: add rfkill driver for Realtek DHC SoCs
+
+Change-Id: I2abd10ee0b8357cc067bad8c68123fd8fd43ffa3
+---
+ drivers/bluetooth/Kconfig      |   6 +
+ drivers/bluetooth/Makefile     |   1 +
+ 2 files changed, 245 insertions(+)
+ create mode 100644 drivers/bluetooth/rtk_rfkill.c
+
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 851842372c9b..ab307a5da105 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -41,6 +41,12 @@ config BT_HCIBTUSB_AUTOSUSPEND
+ 	  This can be overridden by passing btusb.enable_autosuspend=[y|n]
+ 	  on the kernel commandline.
+ 
++config BT_RTKBTRFKILL
++	tristate "Realtek Bluetooth RFKILL driver"
++	default n
++	help
++	  Realtek Bluetooth rfkill driver
++
+ config BT_HCIBTUSB_BCM
+ 	bool "Broadcom protocol support"
+ 	depends on BT_HCIBTUSB
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 16286ea2655d..cd6e4b7f7b37 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -13,6 +13,7 @@ obj-$(CONFIG_BT_HCIBT3C)	+= bt3c_cs.o
+ obj-$(CONFIG_BT_HCIBLUECARD)	+= bluecard_cs.o
+ 
+ obj-$(CONFIG_BT_HCIBTUSB)	+= btusb.o
++obj-$(CONFIG_BT_RTKBTRFKILL)	+= rtk_rfkill.o
+ obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
+ 
+ obj-$(CONFIG_BT_INTEL)		+= btintel.o
+-- 
+2.42.0
+

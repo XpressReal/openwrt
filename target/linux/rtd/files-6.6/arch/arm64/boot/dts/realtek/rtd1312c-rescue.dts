@@ -1,0 +1,114 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR BSD-2-Clause)
+/*
+ * Copyright (c) 2019-2021 Realtek Semiconductor Corp.
+ */
+
+/dts-v1/;
+
+#include "rtd13xx-rescue.dtsi"
+
+/ {
+	model = "Realtek RTD1312C Rescue";
+	compatible = "realtek,rescue", "realtek,rtd1312c";
+
+	memory@40000 {
+		device_type = "memory";
+		reg = <0x00040000 0x3ffc0000>; /* 1 GiB */
+	};
+};
+
+&emmc {
+	compatible = "rtd1312c-dw-cqe-emmc";
+};
+
+&efuse {
+	otp_usb_port0_dc_dis: usb-port0-dc-dis@4fe,0 {
+		reg = <0x4fe 0x1>;
+		bits = <0 4>;
+	};
+	otp_usb_port1_dc_dis: usb-port1-dc-dis@4fe,4 {
+		reg = <0x4fe 0x1>;
+		bits = <4 4>;
+	};
+	otp_usb_port2_dc_dis: usb-port2-dc-dis@4ff,0 {
+		reg = <0x4ff 0x1>;
+		bits = <0 4>;
+	};
+};
+
+&usb_manager {
+	status = "okay";
+};
+
+&usb_port0_usb2phy {
+	compatible = "realtek,rtd1312c-usb2phy";
+	nvmem-cells = <&otp_usb_port0_dc_cal>, <&otp_usb_port0_dc_dis>;
+	nvmem-cell-names = "usb-dc-cal", "usb-dc-dis";
+	status = "okay";
+};
+
+&usb_port0 {
+	realtek,power-gpio = <&gpio 48 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	dwc3@20000 {
+		dr_mode = "otg"; /* otg, host, peripheral*/
+		usb-role-switch;
+		role-switch-default-mode = "peripheral"; /* host, peripheral*/
+		status = "okay";
+	};
+};
+
+&usb_port1_usb2phy {
+	compatible = "realtek,rtd1312c-usb2phy";
+	nvmem-cells = <&otp_usb_port1_dc_cal>, <&otp_usb_port1_dc_dis>;
+	nvmem-cell-names = "usb-dc-cal", "usb-dc-dis";
+	status = "okay";
+};
+
+&usb_port1 {
+	realtek,power-gpio = <&gpio 49 GPIO_ACTIVE_LOW>;
+	status = "okay";
+};
+
+&usb_port2_usb2phy {
+	compatible = "realtek,rtd1312c-usb2phy";
+	nvmem-cells = <&otp_usb_port2_dc_cal>, <&otp_usb_port2_dc_dis>;
+	nvmem-cell-names = "usb-dc-cal", "usb-dc-dis";
+	status = "okay";
+};
+
+&usb_port2_usb3phy {
+	status = "disable";
+};
+
+&usb_port2 {
+	realtek,power-gpio = <&gpio 49 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	dwc3@50000 {
+		dr_mode = "host"; /*host, peripheral*/
+		usb-phy = <&usb_port2_usb2phy>;
+		phys = <&usb_port2_usb2phy>;
+		phy-names = "usb2-phy";
+		maximum-speed = "high-speed";
+		status = "okay";
+	};
+};
+
+&type_c {
+	compatible= "realtek,rtd1312c-type-c";
+	realtek,usb-port = <&usb_port0>;
+	realtek,connector-switch-gpio = <&gpio 30 GPIO_ACTIVE_HIGH>;
+	status = "disabled";
+};
+
+/delete-node/ &nic;
+/delete-node/ &sd;
+/delete-node/ &pcie_trans;
+/delete-node/ &pcie;
+/delete-node/ &pcie1;
+/delete-node/ &pcie2;
+/delete-node/ &pcie0_phy;
+/delete-node/ &pcie1_phy;
+/delete-node/ &pcie2_phy;

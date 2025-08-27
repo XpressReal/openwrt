@@ -1,0 +1,59 @@
+From 7aae508e9994d5361c98a26103840f54e18142be Mon Sep 17 00:00:00 2001
+From: Phinex Hung <phinex@realtek.com>
+Date: Tue, 27 Aug 2024 18:13:17 +0800
+Subject: [PATCH] dts: use HiFi as AO instead
+
+---
+ arch/arm64/boot/dts/realtek/rtd16xxb.dtsi | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi b/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
+index e52001d56f0e..ca4e0189b1ba 100644
+--- a/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
++++ b/arch/arm64/boot/dts/realtek/rtd16xxb.dtsi
+@@ -924,7 +924,7 @@ pm_hifi: pm-hifi {
+ 	};
+ 
+ 	sound: sound {
+-		compatible = "realtek,rtk-alsa-pcm";
++		compatible = "realtek,rtk-alsa-hifi";
+ 		realtek,krpc-agent = <&acpu_kernel_agent>,
+ 				     <&hifi_kernel_agent>;
+ 		status = "disabled";
+@@ -1339,7 +1339,6 @@ hifi-rpc {
+ 			interrupts = <0 104 4>;
+ 			big-endian = <0>;
+ 			rproc = <&hifi_rproc>;
+-			status = "disabled";
+ 			hifi-kernel-channel {
+ 				compatible = "realtek,rpc-kernel-hifi";
+ 				name = "hifi-kernel-channel";
+@@ -1557,7 +1556,7 @@ rtk_rproc: rtk_rproc {
+ 		acpu_rproc: acpu-rproc {
+ 			compatible = "acpu-rproc";
+ 			type-firmware = "acpu";
+-			name-firmware = "bluecore.audio.enc.A00-stark-audio-nonsecure";
++			name-firmware = "bluecore.audio.enc.A00-stark-noaudio-nonsecure-0112";
+ 		};
+ 
+ 		vcpu_rproc: vcpu-rproc {
+@@ -1570,7 +1569,6 @@ hifi_rproc: hifi-rproc {
+ 			compatible = "hifi-rproc";
+ 			type-firmware = "hifi";
+ 			name-firmware = "HIFI.bin-stark-nonsecure-allcache";
+-			status = "disabled";
+ 		};
+ 	};
+ };
+@@ -1637,7 +1635,7 @@ fss: fss@b70 {
+ / {
+ 	audio_out: audio-out {
+ 		compatible = "realtek,audio-out";
+-		remote-cpu = <0>; /* 0: AFW 1: HIFI */
++		remote-cpu = <1>; /* 0: AFW 1: HIFI */
+ 		realtek,krpc-agent = <&acpu_kernel_agent>,
+ 				     <&hifi_kernel_agent>;
+ 		status = "disabled";
+-- 
+2.34.1
+

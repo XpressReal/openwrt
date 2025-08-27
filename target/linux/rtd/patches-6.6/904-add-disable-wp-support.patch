@@ -1,0 +1,67 @@
+Index: kernel-5_15/drivers/mmc/host/rtk-sdmmc.c
+===================================================================
+--- kernel-5_15.orig/drivers/mmc/host/rtk-sdmmc.c
++++ kernel-5_15/drivers/mmc/host/rtk-sdmmc.c
+@@ -2569,7 +2569,12 @@ static int rtk_sdmmc_get_cd(struct mmc_h
+ static int rtk_sdmmc_get_ro(struct mmc_host *host)
+ {
+ 	struct rtk_sdmmc_host *rtk_host = mmc_priv(host);
+-	int sd_wp = readl(rtk_host->gpiodir+GPDATI1);
++  int sd_wp = 0;
++  if (rtk_host->disable_wp) {
++    pr_err("%s: SD card is disabled write protection\n", __func__);
++    return 0;
++  }
++	sd_wp = readl(rtk_host->gpiodir+GPDATI1);
+ 	if (sd_wp & 0x4) {
+ 		pr_err("%s: SD card is write protect\n", __func__);
+ 		return 1;
+@@ -2961,7 +2966,7 @@ static irqreturn_t rtk_sdmmc_cd_irq(int
+ 			writel(tmp, isopad_base + 0xc);
+ 			writel(0x00300300, isopad_base + 0x10);
+ 			tmp = (readl(isopad_base + 0x14) & 0xfffff000) | 0x3;
+-			writel(tmp, isopad_base + 0x14);	
++			writel(tmp, isopad_base + 0x14);
+ 		} else if (chip_id == CHIP_ID_RTD1319) {
+ 			tmp = (0x003003) | (readl(isopad_base + 0x4c) & 0xff000000);
+ 			writel(tmp, isopad_base + 0x4c);
+@@ -3026,6 +3031,10 @@ static irqreturn_t rtk_sdmmc_wp_irq(int
+ {
+ 	struct rtk_sdmmc_host *rtk_host = (struct rtk_sdmmc_host *)data;
+ 	int sd_wp;
++  if (rtk_host->disable_wp) {
++    rtk_host->wp = 0;
++    return IRQ_HANDLED;
++  }
+ 	sd_wp = readl(rtk_host->gpiodir+GPDATI1);
+ 	if(sd_wp & 0x4) {
+ 		rtk_host->wp = 1;
+@@ -3378,6 +3387,7 @@ static int rtk_sdmmc_probe(struct platfo
+ 	rtk_host->sdmmc_gpio = sd_power_gpio_tmp;
+ 	rtk_host->sdmmc_wp_gpio = sd_wp_gpio_tmp;
+ 	rtk_host->sdmmc_cd_gpio = sd_cd_gpio_tmp;
++  rtk_host->disable_wp = device_property_read_bool(&pdev->dev, "disable-wp");
+ 
+ 	reset_control_deassert(rstc_cr);
+ 	clk_prepare_enable(clk_cr);
+@@ -3452,7 +3462,7 @@ static int rtk_sdmmc_probe(struct platfo
+ 		pr_err("Cannot get the SD CD irq...\n");
+ 	else
+ 		pr_info("SD CD irq=%d\n",rtk_host->cd_irq);
+-	
++
+ 	rtk_host->wp_irq = gpiod_to_irq(rtk_host->sdmmc_wp_gpio);
+ 	if(!rtk_host->wp_irq)
+ 		pr_err("Cannot get the SD WP irq...\n");
+Index: kernel-5_15/drivers/mmc/host/rtk-sdmmc.h
+===================================================================
+--- kernel-5_15.orig/drivers/mmc/host/rtk-sdmmc.h
++++ kernel-5_15/drivers/mmc/host/rtk-sdmmc.h
+@@ -53,6 +53,7 @@ struct rtk_sdmmc_host {
+ 	char *sdmmc_bounce_buf;
+ 	int sdmmc_bounce_buf_val;
+ 	struct scatterlist *sdmmc_bounce_sg;
++  bool disable_wp;
+ };
+ 
+ struct sdmmc_cmd_pkt {

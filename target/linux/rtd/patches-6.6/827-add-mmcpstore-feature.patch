@@ -1,0 +1,960 @@
+From 3d073dc460a2a695c9097803d443b0b6351cfb81 Mon Sep 17 00:00:00 2001
+From: Jyan Chou <jyanchou@realtek.com>
+Date: Mon, 3 Feb 2025 11:09:42 +0800
+Subject: [PATCH] [kernel6.6] add mmcpstore feature
+
+- support pstore_blkdev= in bootargs for CONFIG_PSTORE_BLK_BLKDEV setup
+
+Change-Id: Idb98a8454a23115ee034d56966ee9065cde0d7ac
+---
+ block/early-lookup.c              |  99 ++++++++++++
+ drivers/mmc/core/Kconfig          |  13 ++
+ drivers/mmc/core/Makefile         |   1 +
+ drivers/mmc/core/block.c          |   5 +-
+ drivers/mmc/core/block.h          |   7 +
+ drivers/mmc/core/core.h           |   8 -
+ drivers/mmc/core/mmc_ops.c        |  18 +++
+ drivers/mmc/core/mmc_ops.h        |   2 +-
+ drivers/mmc/core/mmcpstore.c      | 249 ++++++++++++++++++++++++++++++
+ drivers/mmc/host/dw_mmc_cqe-rtk.c |   9 +-
+ drivers/mmc/host/dw_mmc_cqe.c     | 125 ++++++++++++++-
+ drivers/mmc/host/dw_mmc_cqe.h     |   3 +
+ fs/pstore/blk.c                   |  82 ++++++++++
+ fs/pstore/zone.c                  |  13 +-
+ include/linux/blkdev.h            |   1 +
+ include/linux/mmc/core.h          |   4 +
+ include/linux/mmc/host.h          |  11 ++
+ include/linux/pstore_blk.h        |   2 +-
+ 18 files changed, 629 insertions(+), 23 deletions(-)
+ create mode 100644 drivers/mmc/core/mmcpstore.c
+
+diff --git a/block/early-lookup.c b/block/early-lookup.c
+index 3effbd0d35e9..0aaa098adfa3 100644
+--- a/block/early-lookup.c
++++ b/block/early-lookup.c
+@@ -252,6 +252,105 @@ int __init early_lookup_bdev(const char *name, dev_t *devt)
+ 	return devt_from_devnum(name, devt);
+ }
+ 
++static dev_t mmc_blk_lookup_devt(const char *name, int partno)
++{
++	dev_t devt = MKDEV(0, 0);
++	struct class_dev_iter iter;
++	struct device *dev;
++
++	class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
++	while ((dev = class_dev_iter_next(&iter))) {
++		struct gendisk *disk = dev_to_disk(dev);
++
++		if (strcmp(dev_name(dev), name))
++			continue;
++
++		if (partno < disk->minors) {
++			/* We need to return the right devno, even
++			 * if the partition doesn't exist yet.
++			 */
++			devt = MKDEV(MAJOR(dev->devt),
++				     MINOR(dev->devt) + partno);
++		} else {
++			devt = part_devt(disk, partno);
++			if (devt)
++				break;
++		}
++	}
++	class_dev_iter_exit(&iter);
++	return devt;
++}
++
++static int devt_from_mmc_devname(const char *name, dev_t *devt)
++{
++	int part;
++	char s[32];
++	char *p;
++
++	if (strlen(name) > 31)
++		return -EINVAL;
++	strcpy(s, name);
++	for (p = s; *p; p++) {
++		if (*p == '/')
++			*p = '!';
++	}
++
++	*devt = mmc_blk_lookup_devt(s, 0);
++	if (*devt)
++		return 0;
++
++	/*
++	 * Try non-existent, but valid partition, which may only exist after
++	 * opening the device, like partitioned md devices.
++	 */
++	while (p > s && isdigit(p[-1]))
++		p--;
++	if (p == s || !*p || *p == '0')
++		return -ENODEV;
++
++	/* try disk name without <part number> */
++	part = simple_strtoul(p, NULL, 10);
++	*p = '\0';
++	*devt = mmc_blk_lookup_devt(s, part);
++	if (*devt)
++		return 0;
++
++	/* try disk name without p<part number> */
++	if (p < s + 2 || !isdigit(p[-2]) || p[-1] != 'p')
++		return -ENODEV;
++	p[-1] = '\0';
++	*devt = mmc_blk_lookup_devt(s, part);
++	if (*devt)
++		return 0;
++	return -ENODEV;
++}
++
++static int devt_from_mmc_devnum(const char *name, dev_t *devt)
++{
++	unsigned maj, min, offset;
++	char *p, dummy;
++
++	if (sscanf(name, "%u:%u%c", &maj, &min, &dummy) == 2 ||
++	    sscanf(name, "%u:%u:%u:%c", &maj, &min, &offset, &dummy) == 3) {
++		*devt = MKDEV(maj, min);
++		if (maj != MAJOR(*devt) || min != MINOR(*devt))
++			return -EINVAL;
++	} else {
++		*devt = new_decode_dev(simple_strtoul(name, &p, 16));
++		if (*p)
++			return -EINVAL;
++	}
++
++	return 0;
++}
++
++int early_lookup_mmc_bdev(const char *name, dev_t *devt)
++{
++        if (strncmp(name, "/dev/", 5) == 0)
++                return devt_from_mmc_devname(name + 5, devt);
++        return devt_from_mmc_devnum(name, devt);
++}
++
+ static char __init *bdevt_str(dev_t devt, char *buf)
+ {
+ 	if (MAJOR(devt) <= 0xff && MINOR(devt) <= 0xff) {
+diff --git a/drivers/mmc/core/Kconfig b/drivers/mmc/core/Kconfig
+index bf4e29ef023c..b68959e4a934 100644
+--- a/drivers/mmc/core/Kconfig
++++ b/drivers/mmc/core/Kconfig
+@@ -34,9 +34,22 @@ config PWRSEQ_SIMPLE
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called pwrseq_simple.
+ 
++config MMC_PSTORE_BACKEND
++	bool "Log panic/oops to a MMC buffer"
++	depends on MMC_BLOCK
++	help
++	  This option will let you create platform backend to store kmsg
++	  crash dumps to a user specified MMC device. This is primarily
++	  based on pstore/blk.
++
++config MMC_PSTORE
++	tristate
++	select PSTORE_BLK
++
+ config MMC_BLOCK
+ 	tristate "MMC block device driver"
+ 	depends on BLOCK
++	select MMC_PSTORE if MMC_PSTORE_BACKEND=y
+ 	imply IOSCHED_BFQ
+ 	default y
+ 	help
+diff --git a/drivers/mmc/core/Makefile b/drivers/mmc/core/Makefile
+index 6a907736cd7a..c3f1199deb71 100644
+--- a/drivers/mmc/core/Makefile
++++ b/drivers/mmc/core/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_PWRSEQ_EMMC)	+= pwrseq_emmc.o
+ mmc_core-$(CONFIG_DEBUG_FS)	+= debugfs.o
+ obj-$(CONFIG_MMC_BLOCK)		+= mmc_block.o
+ mmc_block-objs			:= block.o queue.o
++mmc_block-$(CONFIG_MMC_PSTORE)	+= mmcpstore.o
+ obj-$(CONFIG_MMC_TEST)		+= mmc_test.o
+ obj-$(CONFIG_SDIO_UART)		+= sdio_uart.o
+ mmc_core-$(CONFIG_MMC_CRYPTO)	+= crypto.o
+diff --git a/drivers/mmc/core/block.c b/drivers/mmc/core/block.c
+index 3564a0f63c9c..94bb448cb5a6 100644
+--- a/drivers/mmc/core/block.c
++++ b/drivers/mmc/core/block.c
+@@ -1279,7 +1279,7 @@ static void mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
+ 	struct mmc_card *card = md->queue.card;
+ 	int ret = 0;
+ 
+-	ret = mmc_flush_cache(card->host);
++	ret = mmc_flush_cache(card);
+ 	blk_mq_end_request(req, ret ? BLK_STS_IOERR : BLK_STS_OK);
+ }
+ 
+@@ -3034,6 +3034,8 @@ static int mmc_blk_probe(struct mmc_card *card)
+ 	if (ret)
+ 		goto out;
+ 
++	if (mmc_card_mmc(card) || mmc_card_sd(card))
++		mmcpstore_register(card, md->disk->disk_name);
+ 	/* Add two debugfs entries */
+ 	mmc_blk_add_debugfs(card, md);
+ 
+@@ -3182,6 +3184,7 @@ static void __exit mmc_blk_exit(void)
+ 	unregister_blkdev(MMC_BLOCK_MAJOR, "mmc");
+ 	unregister_chrdev_region(mmc_rpmb_devt, MAX_DEVICES);
+ 	bus_unregister(&mmc_rpmb_bus_type);
++	unregister_mmcpstore();
+ }
+ 
+ module_init(mmc_blk_init);
+diff --git a/drivers/mmc/core/block.h b/drivers/mmc/core/block.h
+index 31153f656f41..3fcc212bf5b0 100644
+--- a/drivers/mmc/core/block.h
++++ b/drivers/mmc/core/block.h
+@@ -17,4 +17,11 @@ struct work_struct;
+ 
+ void mmc_blk_mq_complete_work(struct work_struct *work);
+ 
++#if IS_ENABLED(CONFIG_MMC_PSTORE)
++void unregister_mmcpstore(void);
++void mmcpstore_register(struct mmc_card *card, const char *disk_name);
++#else
++static inline void unregister_mmcpstore(void) {}
++#endif
++
+ #endif
+diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
+index 37091a6589ed..d36bbb38d501 100644
+--- a/drivers/mmc/core/core.h
++++ b/drivers/mmc/core/core.h
+@@ -191,12 +191,4 @@ static inline bool mmc_cache_enabled(struct mmc_host *host)
+ 	return false;
+ }
+ 
+-static inline int mmc_flush_cache(struct mmc_host *host)
+-{
+-	if (host->bus_ops->flush_cache)
+-		return host->bus_ops->flush_cache(host);
+-
+-	return 0;
+-}
+-
+ #endif
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index 3b3adbddf664..1facbf7f9895 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -23,6 +23,7 @@
+ #define MMC_SANITIZE_TIMEOUT_MS		(240 * 1000) /* 240s */
+ #define MMC_OP_COND_PERIOD_US		(4 * 1000) /* 4ms */
+ #define MMC_OP_COND_TIMEOUT_MS		1000 /* 1s */
++#define MMC_CACHE_FLUSH_TIMEOUT_MS	(30 * 1000) /* 30s */
+ 
+ static const u8 tuning_blk_pattern_4bit[] = {
+ 	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
+@@ -1005,6 +1006,23 @@ void mmc_run_bkops(struct mmc_card *card)
+ }
+ EXPORT_SYMBOL(mmc_run_bkops);
+ 
++int mmc_flush_cache(struct mmc_card *card)
++{
++	int err = 0;
++
++	if (mmc_cache_enabled(card->host)) {
++		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
++				 EXT_CSD_FLUSH_CACHE, 1,
++				 MMC_CACHE_FLUSH_TIMEOUT_MS);
++		if (err)
++			pr_err("%s: cache flush error %d\n",
++					mmc_hostname(card->host), err);
++	}
++
++	return err;
++}
++EXPORT_SYMBOL(mmc_flush_cache);
++
+ static int mmc_cmdq_switch(struct mmc_card *card, bool enable)
+ {
+ 	u8 val = enable ? EXT_CSD_CMDQ_MODE_ENABLED : 0;
+diff --git a/drivers/mmc/core/mmc_ops.h b/drivers/mmc/core/mmc_ops.h
+index 92d4194c7893..f6f5344017d3 100644
+--- a/drivers/mmc/core/mmc_ops.h
++++ b/drivers/mmc/core/mmc_ops.h
+@@ -55,6 +55,6 @@ void mmc_run_bkops(struct mmc_card *card);
+ int mmc_cmdq_enable(struct mmc_card *card);
+ int mmc_cmdq_disable(struct mmc_card *card);
+ int mmc_sanitize(struct mmc_card *card, unsigned int timeout_ms);
+-
++int mmc_flush_cache(struct mmc_card *card);
+ #endif
+ 
+diff --git a/drivers/mmc/core/mmcpstore.c b/drivers/mmc/core/mmcpstore.c
+new file mode 100644
+index 000000000000..f6d6da608467
+--- /dev/null
++++ b/drivers/mmc/core/mmcpstore.c
+@@ -0,0 +1,249 @@
++/*
++ * MMC pstore support based on pstore/blk
++ *
++ * Copyright (c) 2020 Marvell.
++ * Author: Bhaskara Budiredla <bbudiredla@marvell.com>
++ */
++
++#define pr_fmt(fmt) "mmcpstore: " fmt
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/pstore_blk.h>
++#include <linux/blkdev.h>
++#include <linux/mount.h>
++#include <linux/slab.h>
++#include <linux/mmc/mmc.h>
++#include <linux/mmc/host.h>
++#include <linux/mmc/card.h>
++#include <linux/scatterlist.h>
++#include "block.h"
++#include "card.h"
++#include "core.h"
++
++#define MMC_READ_REQ		0
++#define MMC_WRITE_REQ		1
++#define MMC_PANIC_WRITE_REQ	2
++
++static struct mmcpstore_context {
++	char dev_name[BDEVNAME_SIZE];
++	int partno;
++	sector_t start_sect;
++	sector_t size;
++	struct pstore_blk_config conf;
++	struct pstore_device_info dev;
++
++	struct mmc_card	*card;
++	struct mmc_request *mrq;
++} oops_cxt;
++
++void mmc_wait_for_pstore_req(struct mmc_host *host,
++				    struct mmc_request *mrq,
++				    int poll)
++{
++	unsigned int timeout;
++
++	host->ops->req_cleanup_pending(host);
++
++	mmc_start_request(host, mrq);
++
++	if (poll && mrq->data) {
++		timeout = mrq->data->timeout_ns / NSEC_PER_MSEC;
++		host->ops->req_completion_poll(host, timeout);
++	}
++}
++
++static void mmc_prep_req(struct mmc_request *mrq,
++		unsigned int sect_offset, unsigned int nsects,
++		struct scatterlist *sg, u32 opcode, unsigned int flags)
++{
++	mrq->cmd->opcode = opcode;
++	mrq->cmd->arg = sect_offset;
++	mrq->cmd->flags = MMC_RSP_R1 | MMC_CMD_ADTC;
++
++	if (nsects == 1) {
++		mrq->stop = NULL;
++	} else {
++		mrq->stop->opcode = MMC_STOP_TRANSMISSION;
++		mrq->stop->arg = 0;
++		mrq->stop->flags = MMC_RSP_R1B | MMC_CMD_AC;
++	}
++
++	mrq->data->blksz = SECTOR_SIZE;
++	mrq->data->blocks = nsects;
++	mrq->data->flags = flags;
++	mrq->data->sg = sg;
++	mrq->data->sg_len = 1;
++}
++
++static int mmcpstore_panic_write_req(const char *buf,
++		unsigned int nsects, unsigned int sect_offset)
++{
++	struct mmcpstore_context *cxt = &oops_cxt;
++	struct mmc_request *mrq = cxt->mrq;
++	struct mmc_card *card = cxt->card;
++	struct mmc_host *host = card->host;
++	struct scatterlist sg;
++	u32 opcode;
++
++	opcode = (nsects > 1) ? MMC_WRITE_MULTIPLE_BLOCK : MMC_WRITE_BLOCK;
++	mmc_prep_req(mrq, sect_offset, nsects, &sg, opcode, MMC_DATA_WRITE);
++	sg_init_one(&sg, buf, (nsects << SECTOR_SHIFT));
++	mmc_set_data_timeout(mrq->data, cxt->card);
++
++	host->claimed = 1;
++
++	mmc_wait_for_pstore_req(host, mrq, 1);
++
++	return 0;
++}
++
++static ssize_t mmcpstore_panic_write(const char *buf, size_t size, loff_t off)
++{
++	struct mmcpstore_context *cxt = &oops_cxt;
++	u32 sects = size >> SECTOR_SHIFT;
++	int ret;
++
++	ret = mmcpstore_panic_write_req(buf, sects, cxt->start_sect + (off >> SECTOR_SHIFT));
++
++	if (ret)
++		return 0;
++
++	return size;
++}
++
++static struct block_device *mmcpstore_open_backend(const char *device)
++{
++	struct block_device *bdev;
++	dev_t devt;
++
++	bdev = blkdev_get_by_path(device, FMODE_READ, NULL, NULL);
++	if (IS_ERR(bdev)) {
++		if (early_lookup_mmc_bdev(device, &devt)) {
++			pr_err("failed to resolve '%s'!\n", device);
++			return ERR_PTR(-ENODEV);;
++		}
++
++		bdev = blkdev_get_by_dev(devt, FMODE_READ, NULL, NULL);
++		return bdev;
++	}
++	return bdev;
++}
++
++static void mmcpstore_close_backend(struct block_device *bdev)
++{
++	if (!bdev)
++		return;
++	blkdev_put(bdev, NULL);
++}
++
++void mmcpstore_register(struct mmc_card *card, const char *disk_name)
++{
++	struct mmcpstore_context *cxt = &oops_cxt;
++	struct pstore_blk_config *conf = &cxt->conf;
++	struct block_device *bdev;
++	struct mmc_command *stop;
++	struct mmc_command *cmd;
++	struct mmc_request *mrq;
++	struct mmc_data *data;
++	int ret;
++	unsigned long longcnt;
++
++	ret = pstore_blk_get_config(conf);
++	if (!conf->device[0]) {
++		pr_debug("psblk backend is empty\n");
++		return;
++	}
++
++	bdev = mmcpstore_open_backend(conf->device);
++	if (IS_ERR(bdev)) {
++		pr_err("%s failed to open with %ld\n",
++		conf->device, PTR_ERR(bdev));
++		return;
++	}
++
++	mmcpstore_close_backend(bdev);
++
++	pr_info("found pstore mmc device\n");
++
++	cxt->start_sect = get_start_sect(bdev);
++	cxt->size = bdev_nr_bytes(bdev);
++
++	if (cxt->size < conf->kmsg_size * 2) {
++		pr_err("pstore partition %s not big enough\n");
++		return;
++	}
++
++	cxt->card = card;
++
++	mrq = kzalloc(sizeof(struct mmc_request), GFP_KERNEL);
++	if (!mrq)
++		goto out;
++
++	cmd = kzalloc(sizeof(struct mmc_command), GFP_KERNEL);
++	if (!cmd)
++		goto free_mrq;
++
++	stop = kzalloc(sizeof(struct mmc_command), GFP_KERNEL);
++	if (!stop)
++		goto free_cmd;
++
++	data = kzalloc(sizeof(struct mmc_data), GFP_KERNEL);
++	if (!data)
++		goto free_stop;
++
++
++	if (unlikely(conf->kmsg_size % SECTOR_SIZE)) {
++		dev_err(&cxt->card->dev,
++			"record size %lu KB must align to %d Bytes\n",
++			conf->kmsg_size / 1024,
++			SECTOR_SIZE);
++		goto free_data;
++	}
++
++	longcnt = BITS_TO_LONGS(div_u64(cxt->size, conf->kmsg_size));
++
++	mrq->cmd = cmd;
++	mrq->data = data;
++	mrq->stop = stop;
++	cxt->mrq = mrq;
++
++	cxt->dev.flags = PSTORE_FLAGS_DMESG;
++	cxt->dev.zone.panic_write = mmcpstore_panic_write;
++	cxt->dev.zone.total_size = cxt->size;
++
++	ret = register_pstore_blk(&cxt->dev);
++	if (ret) {
++		pr_err("%s registering with psblk failed (%d)\n",
++		       conf->device, ret);
++		goto free_data;
++	}
++
++	pr_info("%s registered as psblk backend\n", conf->device);
++
++	return;
++
++free_data:
++	kfree(data);
++free_stop:
++	kfree(stop);
++free_cmd:
++	kfree(cmd);
++free_mrq:
++	kfree(mrq);
++out:
++	pr_info("%s register pstoreblk backend device failed\n", conf->device);
++	return;
++}
++
++void unregister_mmcpstore(void)
++{
++	struct mmcpstore_context *cxt = &oops_cxt;
++
++	unregister_pstore_device(&cxt->dev);
++	kfree(cxt->mrq->data);
++	kfree(cxt->mrq->stop);
++	kfree(cxt->mrq->cmd);
++	kfree(cxt->mrq);
++	cxt->card = NULL;
++}
+diff --git a/drivers/mmc/host/dw_mmc_cqe-rtk.c b/drivers/mmc/host/dw_mmc_cqe-rtk.c
+index 905f320b2e41..9b887cf9de65 100644
+--- a/drivers/mmc/host/dw_mmc_cqe-rtk.c
++++ b/drivers/mmc/host/dw_mmc_cqe-rtk.c
+@@ -1170,8 +1170,13 @@ static int dw_mci_rtk_parse_dt(struct dw_mci *host)
+ 	priv->is_cqe = 0;
+ 	prop = of_get_property(host->dev->of_node, "cqe", &size);
+ 	if (prop) {
+-		priv->is_cqe = of_read_number(prop, 1);
+-		printk(KERN_ERR "[%s] cmdq mode : %d\n", __func__, priv->is_cqe);
++		if (IS_ENABLED(CONFIG_MMC_PSTORE)) {
++			priv->is_cqe = 0;
++			printk(KERN_ERR "[%s] cmdq disabled because the mmcpstore is set\n", __func__);
++		} else {
++			priv->is_cqe = of_read_number(prop, 1);
++			printk(KERN_ERR "[%s] cmdq mode : %d\n", __func__, priv->is_cqe);
++		}
+ 	} else {
+ 		printk(KERN_ERR "[%s] use default eMMC legacy mode !\n", __func__);
+ 	}
+diff --git a/drivers/mmc/host/dw_mmc_cqe.c b/drivers/mmc/host/dw_mmc_cqe.c
+index c8e03e583420..94e70d7ee795 100644
+--- a/drivers/mmc/host/dw_mmc_cqe.c
++++ b/drivers/mmc/host/dw_mmc_cqe.c
+@@ -65,6 +65,8 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios);
+ irqreturn_t cqhci_irq(struct mmc_host *mmc, u32 intmask, int cmd_error, int data_error);
+ static void cmd_complete(struct dw_mci *host, u16 interrupt, int *cmd_error);
+ static void data_complete(struct dw_mci *host, u16 interrupt, int *data_error);
++static void dw_mci_req_cleanup_pending(struct mmc_host *mmc);
++static int dw_mci_req_completion_poll(struct mmc_host *mmc, unsigned long msecs);
+ 
+ #if 0
+ static void print_reg(struct dw_mci *host)
+@@ -593,6 +595,8 @@ static const struct mmc_host_ops dw_mci_ops = {
+ 	.prepare_hs400_tuning   	= dw_mci_prepare_hs400_tuning,
+ 	.hs400_complete         	= dw_mci_hs400_complete,
+ 	.init_card 			= dw_mci_init_card,
++	.req_cleanup_pending		= dw_mci_req_cleanup_pending,
++	.req_completion_poll		= dw_mci_req_completion_poll,
+ };
+ 
+ static int dw_mci_init_slot(struct dw_mci *host)
+@@ -916,10 +920,13 @@ static int dw_mci_start_command(struct dw_mci *host,
+ 		dw_mci_clr_int(host);
+ 
+ 		/*command with data, r1b case*/
+-		if (xfer_flag==1)
+-			dw_mci_en_xfer_int(host);
+-		else
+-			dw_mci_en_cd_int(host);
++		if (xfer_flag==1) {
++			if (host->pstore == 0)
++				dw_mci_en_xfer_int(host);
++		} else {
++			if (host->pstore == 0)
++				dw_mci_en_cd_int(host);
++		}
+ 
+ 		/*If we use cmd23, we cannot send auto stop command*/
+ 		if (cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK ||
+@@ -938,7 +945,8 @@ static int dw_mci_start_command(struct dw_mci *host,
+ 		mci_writew(host, CMD_R, cmd_flags);
+ 		spin_unlock_irqrestore(&host->irq_lock,flags);
+ 
+-		wait_for_completion(host->int_waiting);
++		if (host->pstore == 0)
++			wait_for_completion(host->int_waiting);
+ 
+ 		if(xfer_flag == 1)
+ 			wait_done(host, (u32*)(host->regs + SDMMC_NORMAL_INT_STAT_R), BIT(1), BIT(1));
+@@ -1301,6 +1309,113 @@ static int dw_mci_switch(struct mmc_host *mmc,
+ 	return err;
+ }
+ 
++int mmc_flush_cache(struct mmc_card *card);
++static int dw_mci_pstore_polling_status(struct dw_mci *host, u32 *status)
++{
++        int err = 0;
++        struct mmc_command cmd;
++        u32 cmdr;
++        u8 cur_state;
++
++        memset(&cmd, 0, sizeof(struct mmc_command));
++
++        cmd.opcode = MMC_SEND_STATUS;
++        cmd.arg = 1 << 16;
++        cmd.flags = MMC_RSP_SPI_R2 | MMC_RSP_R1 | MMC_CMD_AC;
++        cmd.data = NULL;
++
++        cmdr = (cmd.opcode << 8) | SDMMC_RESP_LEN_48 |
++                SDMMC_CMD_CHK_RESP_CRC | SDMMC_CMD_IDX_CHK_ENABLE;
++
++        mci_writew(host, XFER_MODE_R, 0);
++        mci_writel(host, ARGUMENT_R, cmd.arg);
++
++        err = dw_mci_start_command(host, &cmd, cmdr);
++        if (err)
++                dw_mci_reset(host);
++        dw_mci_read_rsp(host, &cmd, cmd.resp);
++
++        *status = cmd.resp[0];
++        cur_state = R1_CURRENT_STATE(cmd.resp[0]);
++        err = -DW_MCI_NOT_READY;
++        if(cur_state == R1_STATE_TRAN) {
++                if(cmd.resp[0] & R1_READY_FOR_DATA)
++                        err = 0;
++ }
++
++        return err;
++}
++
++static int dw_mci_req_completion_poll(struct mmc_host *mmc, unsigned long msecs)
++{
++        struct dw_mci_slot *slot = mmc_priv(mmc);
++        struct dw_mci *host = slot->host;
++        u32 status = 0;
++
++        while (msecs) {
++                if (host->normal_interrupt & SDMMC_XFER_COMPLETE) {
++                        pr_err("%s: wait interrupt done...\n", __func__);
++                        dw_mci_wait_status(host, &status);
++                        dw_mci_clr_signal_int(host);
++                        dw_mci_clr_int(host);
++                        dump_stack();
++                        host->pstore = 0;
++                        return 0;
++                } else if (host->normal_interrupt & SDMMC_ERR_INTERRUPT) {
++                        pr_err("interrupt error!!!\n");
++                        dw_mci_pstore_polling_status(host, &status);
++                        host->pstore = 0;
++                        return -EIO;
++                }
++                mdelay(1);
++                msecs--;
++        }
++        host->pstore = 0;
++        return -ETIMEDOUT;
++}
++
++static void dw_mci_req_cleanup_pending(struct mmc_host *mmc)
++{
++        struct dw_mci_slot *slot = mmc_priv(mmc);
++        struct dw_mci *host = slot->host;
++        int cnt = 0;
++        int ret = 0;
++        u32 status = 0;
++
++        host->pstore = 1;
++
++        if (down_write_trylock(&host->cr_rw_sem)) {
++                pr_info("%s No eMMC access currently...\n", __func__);
++                up_write(&host->cr_rw_sem);
++        } else {
++                pr_err("%s eMMC access currently, need to stop the DMA...\n", __func__);
++                mci_writew(host, ERROR_INT_STAT_R, mci_readw(host, ERROR_INT_STAT_R) & 0xffff);
++                /*synchronous abort: stop host dma*/
++                mci_writeb(host, BGAP_CTRL_R, BIT(0));
++                wait_done(host, (u32*)(host->regs + SDMMC_NORMAL_INT_STAT_R), BIT(1), BIT(1));
++
++                mci_writew(host, NORMAL_INT_STAT_R, BIT(1));
++                mci_writeb(host, SW_RST_R, BIT(1)|BIT(2));
++                wait_done(host, (u32*)(host->regs + SDMMC_CLK_CTRL_R), (BIT(25)|BIT(26)), 0);
++                wait_done(host, (u32*)(host->regs + SDMMC_PSTATE_REG), (BIT(0)|BIT(1)), 0);
++                udelay(40);
++
++                up_write(&host->cr_rw_sem);
++                tasklet_schedule(&host->tasklet);
++                ret = dw_mci_pstore_polling_status(host, &status);
++
++                while(ret != 0 && cnt< 100) {
++                        dw_mci_send_stop_command(host, host->cmd);
++                        mdelay(10);
++                        cnt++;
++                        ret = dw_mci_pstore_polling_status(host, &status);
++                }
++                mmc_flush_cache(mmc->card);
++                udelay(40);
++        }
++}
++
++
+ static int dw_mci_cqe_switch(struct mmc_host *mmc, bool enable)
+ {
+ 	int ret = 0;
+diff --git a/drivers/mmc/host/dw_mmc_cqe.h b/drivers/mmc/host/dw_mmc_cqe.h
+index 52ff01baf5e5..a9e562fdb984 100644
+--- a/drivers/mmc/host/dw_mmc_cqe.h
++++ b/drivers/mmc/host/dw_mmc_cqe.h
+@@ -66,6 +66,9 @@ struct dw_mci {
+ 	u8			cqe_reenable;
+ 	bool			cmd_atomic;
+ 	struct cqhci_host       *cqe;
++#if IS_ENABLED(CONFIG_MMC_PSTORE)
++	 bool            pstore;
++#endif
+ };
+ 
+ enum {
+diff --git a/fs/pstore/blk.c b/fs/pstore/blk.c
+index 85668cb31c3d..23480642fbee 100644
+--- a/fs/pstore/blk.c
++++ b/fs/pstore/blk.c
+@@ -18,6 +18,8 @@
+ #include <linux/file.h>
+ #include <linux/init_syscalls.h>
+ #include <linux/mount.h>
++#include <linux/namei.h>
++#include "../fs/internal.h"
+ 
+ static long kmsg_size = CONFIG_PSTORE_BLK_KMSG_SIZE;
+ module_param(kmsg_size, long, 0400);
+@@ -64,6 +66,15 @@ static char blkdev[80] = CONFIG_PSTORE_BLK_BLKDEV;
+ module_param_string(blkdev, blkdev, 80, 0400);
+ MODULE_PARM_DESC(blkdev, "block device for pstore storage");
+ 
++static int __init pstore_blkdev_setup(char *line)
++{
++	strncpy(blkdev, line, 80);
++	return 1;
++}
++
++// early_param("pstore_blkdev=", pstore_blkdev_setup);
++__setup("pstore_blkdev=", pstore_blkdev_setup);
++
+ /*
+  * All globals must only be accessed under the pstore_blk_lock
+  * during the register/unregister functions.
+@@ -282,6 +293,77 @@ static inline const char *early_boot_devpath(const char *initial_devname)
+ }
+ #endif
+ 
++int init_mmc_mknod(const char *filename, umode_t mode, unsigned int dev)
++{
++	struct dentry *dentry;
++	struct path path;
++	int error;
++
++	if (S_ISFIFO(mode) || S_ISSOCK(mode))
++		dev = 0;
++	else if (!(S_ISBLK(mode) || S_ISCHR(mode)))
++		return -EINVAL;
++
++	dentry = kern_path_create(AT_FDCWD, filename, &path, 0);
++	if (IS_ERR(dentry))
++		return PTR_ERR(dentry);
++
++	if (!IS_POSIXACL(path.dentry->d_inode))
++		mode &= ~current_umask();
++
++	error = vfs_mknod(mnt_idmap(path.mnt), path.dentry->d_inode,
++				  dentry, mode, new_decode_dev(dev));
++
++	done_path_create(&path, dentry);
++	return error;
++}
++
++static const char *early_boot_mmc_devpath(const char *initial_devname)
++{
++        /*
++         * During early boot the real root file system hasn't been
++         * mounted yet, and no device nodes are present yet. Use the
++         * same scheme to find the device that we use for mounting
++         * the root file system.
++         */
++        dev_t dev;
++
++        if (early_lookup_mmc_bdev(initial_devname, &dev)) {
++                pr_err("failed to resolve '%s'!\n", initial_devname);
++                return initial_devname;
++        }
++
++	do_unlinkat(-100, getname_kernel(devname));
++	//init_mknod(devname, S_IFBLK | 0600, new_encode_dev(dev));
++	init_mmc_mknod(devname, S_IFBLK | 0600, new_encode_dev(dev));
++
++        return devname;
++}
++
++
++int register_pstore_blk(struct pstore_device_info *info)
++{
++	int ret;
++
++	/* Reject an empty blkdev. */
++	if (!blkdev[0]) {
++		pr_err("blkdev empty with best_effort=Y\n");
++		return -EINVAL;
++	}
++
++	info->zone.read = psblk_generic_blk_read;
++	info->zone.write = psblk_generic_blk_write;
++
++	ret = __register_pstore_blk(info,
++				    early_boot_mmc_devpath(blkdev));
++	if (ret)
++		pr_err("failed to attach!!!\n");
++	else
++		pr_info("attached %s (%lu)\n", blkdev, info->zone.total_size);
++
++	return ret;
++}
++
+ static int __init __best_effort_init(void)
+ {
+ 	struct pstore_device_info *best_effort_dev;
+diff --git a/fs/pstore/zone.c b/fs/pstore/zone.c
+index abca117725c8..a34453a7f1c1 100644
+--- a/fs/pstore/zone.c
++++ b/fs/pstore/zone.c
+@@ -375,8 +375,9 @@ static int psz_kmsg_recover_meta(struct psz_context *cxt)
+ 	ssize_t rcnt, len;
+ 	struct psz_buffer *buf;
+ 	struct psz_kmsg_header *hdr;
+-	struct timespec64 time = { };
++	//struct timespec64 time = { };
+ 	unsigned long i;
++	unsigned long counter=0;
+ 	/*
+ 	 * Recover may on panic, we can't allocate any memory by kmalloc.
+ 	 * So, we use local array instead.
+@@ -405,6 +406,8 @@ static int psz_kmsg_recover_meta(struct psz_context *cxt)
+ 
+ 		if (buf->sig != zone->buffer->sig) {
+ 			pr_debug("no valid data in kmsg dump zone %lu\n", i);
++			if (info->erase)
++				info->erase(info->kmsg_size, zone->off);
+ 			continue;
+ 		}
+ 
+@@ -427,9 +430,11 @@ static int psz_kmsg_recover_meta(struct psz_context *cxt)
+ 		 * we get the newest zone, and the next one must be the oldest
+ 		 * or unused zone, because we do write one by one like a circle.
+ 		 */
+-		if (hdr->time.tv_sec >= time.tv_sec) {
+-			time.tv_sec = hdr->time.tv_sec;
++		if(hdr->counter > counter &&
++				((hdr->counter-counter) < cxt->kmsg_max_cnt || counter==0)) {
++			counter = hdr->counter;
+ 			cxt->kmsg_write_cnt = (i + 1) % cxt->kmsg_max_cnt;
++			pr_debug("cxt->kmsg_write_cn=%d\n", cxt->kmsg_write_cnt);
+ 		}
+ 
+ 		if (hdr->reason == KMSG_DUMP_OOPS)
+@@ -973,8 +978,6 @@ static ssize_t psz_kmsg_read(struct pstore_zone *zone,
+ 		char *buf = kasprintf(GFP_KERNEL, "%s: Total %d times\n",
+ 				      kmsg_dump_reason_str(record->reason),
+ 				      record->count);
+-		if (!buf)
+-			return -ENOMEM;
+ 		hlen = strlen(buf);
+ 		record->buf = krealloc(buf, hlen + size, GFP_KERNEL);
+ 		if (!record->buf) {
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index ef35e9a9878c..39f07eea2bc1 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1526,6 +1526,7 @@ void sync_bdevs(bool wait);
+ void bdev_statx_dioalign(struct inode *inode, struct kstat *stat);
+ void printk_all_partitions(void);
+ int __init early_lookup_bdev(const char *pathname, dev_t *dev);
++int early_lookup_mmc_bdev(const char *pathname, dev_t *dev);
+ #else
+ static inline void invalidate_bdev(struct block_device *bdev)
+ {
+diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+index 6efec0b9820c..ca9b245a4e16 100644
+--- a/include/linux/mmc/core.h
++++ b/include/linux/mmc/core.h
+@@ -171,6 +171,10 @@ struct mmc_request {
+ 
+ struct mmc_card;
+ 
++#if IS_ENABLED(CONFIG_MMC_PSTORE)
++void mmc_wait_for_pstore_req(struct mmc_host *host, struct mmc_request *mrq, int poll);
++#endif
++
+ void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq);
+ int mmc_wait_for_cmd(struct mmc_host *host, struct mmc_command *cmd,
+ 		int retries);
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 62a6847a3b6f..32d6d78d3fba 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -218,6 +218,17 @@ struct mmc_host_ops {
+ 
+ 	/* Initialize an SD express card, mandatory for MMC_CAP2_SD_EXP. */
+ 	int	(*init_sd_express)(struct mmc_host *host, struct mmc_ios *ios);
++#if IS_ENABLED(CONFIG_MMC_PSTORE)
++	/*
++	 * The following two APIs are introduced to support mmcpstore
++	 * functionality. Cleanup API to terminate the ongoing and
++	 * pending requests before a panic write post, and polling API
++	 * to ensure that write succeeds before the Kernel dies.
++	 */
++	void	(*req_cleanup_pending)(struct mmc_host *host);
++	int	(*req_completion_poll)(struct mmc_host *host,
++				       unsigned long timeout);
++#endif
+ };
+ 
+ struct mmc_cqe_ops {
+diff --git a/include/linux/pstore_blk.h b/include/linux/pstore_blk.h
+index 924ca07aafbd..a5d1b3bc0ddc 100644
+--- a/include/linux/pstore_blk.h
++++ b/include/linux/pstore_blk.h
+@@ -51,5 +51,5 @@ struct pstore_blk_config {
+  * Failure returns negative error code, and success returns 0.
+  */
+ int pstore_blk_get_config(struct pstore_blk_config *info);
+-
++int register_pstore_blk(struct pstore_device_info *info);
+ #endif
+-- 
+2.47.0
+
