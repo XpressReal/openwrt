@@ -29,10 +29,10 @@ diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
 index c2089f04887e..745a8f9afec0 100644
 --- a/drivers/mailbox/Makefile
 +++ b/drivers/mailbox/Makefile
-@@ -58,3 +58,5 @@ obj-$(CONFIG_SUN6I_MSGBOX)	+= sun6i-msgbox.o
- obj-$(CONFIG_SPRD_MBOX)		+= sprd-mailbox.o
- 
+@@ -62,3 +62,5 @@ obj-$(CONFIG_SPRD_MBOX)		+= sprd-mailbox.o
  obj-$(CONFIG_QCOM_IPCC)		+= qcom-ipcc.o
+ 
+ obj-$(CONFIG_APPLE_MAILBOX)	+= apple-mailbox.o
 +
 +obj-$(CONFIG_RTK_IFCP_MBOX)     += rtk-ifcp-mailbox.o
 -- 

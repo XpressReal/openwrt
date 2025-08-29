@@ -13,8 +13,6 @@ define Device/Default
   KERNEL := kernel-bin | Image none
   IMAGES := sdcard.img.gz
   IMAGE/sdcard.img.gz := rtd-sdcard | append-metadata | gzip
-  DTS_DIR := rtd1619b/
-  DTS = $$(DTS_DIR)$$(SOC)-$(lastword $(subst _, ,$(1)))
 endef
 
 include $(SUBTARGET).mk

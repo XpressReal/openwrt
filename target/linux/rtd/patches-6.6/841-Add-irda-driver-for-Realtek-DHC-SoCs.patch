@@ -27,10 +27,10 @@ diff --git a/drivers/media/rc/Makefile b/drivers/media/rc/Makefile
 index 0db51fad27d6..f235abd03e38 100644
 --- a/drivers/media/rc/Makefile
 +++ b/drivers/media/rc/Makefile
-@@ -51,3 +51,4 @@ obj-$(CONFIG_IR_SIR) += sir_ir.o
- obj-$(CONFIG_IR_MTK) += mtk-cir.o
+@@ -55,3 +55,4 @@ obj-$(CONFIG_RC_ATI_REMOTE) += ati_remote.o
+ obj-$(CONFIG_RC_LOOPBACK) += rc-loopback.o
+ obj-$(CONFIG_RC_ST) += st_rc.o
  obj-$(CONFIG_RC_XBOX_DVD) += xbox_remote.o
- obj-$(CONFIG_IR_TOY) += ir_toy.o
 +obj-$(CONFIG_IR_RTK) += rtk-ir/
 diff --git a/include/media/rc-map.h b/include/media/rc-map.h
 index 4676545ffd8f..8f2c7b53325f 100644

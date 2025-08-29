@@ -23,10 +23,10 @@ diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
 index 82fc3e616e54..77f267c0798e 100644
 --- a/drivers/thermal/Makefile
 +++ b/drivers/thermal/Makefile
-@@ -60,3 +60,5 @@ obj-$(CONFIG_UNIPHIER_THERMAL)	+= uniphier_thermal.o
- obj-$(CONFIG_AMLOGIC_THERMAL)     += amlogic_thermal.o
+@@ -64,3 +64,5 @@ obj-$(CONFIG_AMLOGIC_THERMAL)     += amlogic_thermal.o
  obj-$(CONFIG_SPRD_THERMAL)	+= sprd_thermal.o
  obj-$(CONFIG_KHADAS_MCU_FAN_THERMAL)	+= khadas_mcu_fan.o
+ obj-$(CONFIG_LOONGSON2_THERMAL)	+= loongson2_thermal.o
 +obj-$(CONFIG_RTK_THERMAL)	+= realtek/
 +
 -- 
