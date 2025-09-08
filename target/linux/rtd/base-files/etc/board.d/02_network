@@ -1,0 +1,62 @@
+#
+# Copyright (C) 2013-2015 OpenWrt.org
+#
+
+. /lib/functions/uci-defaults.sh
+. /lib/functions/system.sh
+
+rtd_setup_interfaces()
+{
+	local board="$1"
+
+	case "$board" in
+	realtek,bleeding-edge)
+		ucidef_set_interface_lan "eth0"
+		;;
+	*)
+		ucidef_set_interface_lan "eth0"
+		;;
+	esac
+}
+
+xpressreal_t3_get_mac()
+{
+	local interface=$1
+	local address
+
+	address=$(macaddr_generate_from_mmc_cid mmcblk1)
+	if [ "$interface" = "lan" ]; then
+		address=$(macaddr_add "$address" 1)
+	fi
+
+	echo "$address"
+}
+
+rtd_setup_macs()
+{
+	local board="$1"
+	local lan_mac=""
+	local wan_mac=""
+	local label_mac=""
+
+	case "$board" in
+	realtek,bleeding-edge)
+		lan_mac=$(xpressreal_t3_get_mac lan)
+		;;
+	*)
+		lan_mac=$(xpressreal_t3_get_mac lan)
+		;;
+	esac
+
+	[ -n "$lan_mac" ] && ucidef_set_interface_macaddr "lan" $lan_mac
+	[ -n "$wan_mac" ] && ucidef_set_interface_macaddr "wan" $wan_mac
+	[ -n "$label_mac" ] && ucidef_set_label_macaddr $label_mac
+}
+
+board_config_update
+board=$(board_name)
+rtd_setup_interfaces $board
+rtd_setup_macs $board
+board_config_flush
+
+exit 0
