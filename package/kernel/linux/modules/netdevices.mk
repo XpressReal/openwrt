@@ -2046,10 +2046,10 @@ $(eval $(call KernelPackage,enc28j60))
 define KernelPackage/aic8800-wlan
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=AIC8800 SDIO wireless module
-  KCONFIG:=CONFIG_AIC8800_WLAN_SUPPORT
+  KCONFIG:=CONFIG_AIC8800
   FILES:= \
-         $(LINUX_DIR)/bsp/drivers/net/wireless/aic8800/aic8800_fdrv/aic8800_fdrv.ko \
-         $(LINUX_DIR)/bsp/drivers/net/wireless/aic8800/aic8800_bsp/aic8800_bsp.ko
+         $(LINUX_DIR)/drivers/net/wireless/aic8800/aic8800_fdrv/aic8800_fdrv.ko \
+         $(LINUX_DIR)/drivers/net/wireless/aic8800/aic8800_bsp/aic8800_bsp.ko
   AUTOLOAD:=$(call AutoProbe,aic8800_fdrv aic8800_bsp)
 endef
 
@@ -2062,8 +2062,8 @@ $(eval $(call KernelPackage,aic8800-wlan))
 define KernelPackage/aic8800-bt
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=AIC8800 SDIO bluetooth module
-  KCONFIG:=CONFIG_AIC8800_BTLPM_SUPPORT
-  FILES:=$(LINUX_DIR)/bsp/drivers/net/wireless/aic8800/aic8800_btlpm/aic8800_btlpm.ko
+  KCONFIG:=CONFIG_AIC8800
+  FILES:=$(LINUX_DIR)/drivers/net/wireless/aic8800/aic8800_btlpm/aic8800_btlpm.ko
   AUTOLOAD:=$(call AutoProbe,aic8800_btlpm)
 endef
 

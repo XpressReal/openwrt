@@ -11,10 +11,10 @@ rtd_setup_interfaces()
 
 	case "$board" in
 	realtek,bleeding-edge)
-		ucidef_set_interface_lan "eth0"
+		ucidef_set_interface_lan "eth0 wlan0"
 		;;
 	*)
-		ucidef_set_interface_lan "eth0"
+		ucidef_set_interface_lan "eth0 wlan0"
 		;;
 	esac
 }

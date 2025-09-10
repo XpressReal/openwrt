@@ -6,25 +6,30 @@ FAT32_BLOCKS=$(shell echo $$(($(CONFIG_RTD_SD_BOOT_PARTSIZE)*1024*1024/$(FAT32_B
 
 # Custom kernel build rule for FIT image
 define Build/rtd-fit
-    cp $(KDIR)/Image $(STAGING_DIR_HOST)/bin/
+    # Create unique temporary directory to avoid race conditions
+    $(eval TMP_DIR := $(shell mktemp -d))
+    
+    cp $(KDIR)/Image $(TMP_DIR)/
     
     # Copy device tree blob
-    cp $(KDIR)/image-rtd1619b-bleedingedge-4gb.dtb $(STAGING_DIR_HOST)/bin/ || \
-    cp $(LINUX_DIR)/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge-4gb.dtb $(STAGING_DIR_HOST)/bin/
+    cp $(KDIR)/image-rtd1619b-bleedingedge-4gb.dtb $(TMP_DIR)/ || \
+    cp $(LINUX_DIR)/arch/arm64/boot/dts/realtek/rtd1619b-bleedingedge-4gb.dtb $(TMP_DIR)/
     
-    cp $(CURDIR)/yocto.its $(STAGING_DIR_HOST)/bin/
+    cp $(CURDIR)/yocto.its $(TMP_DIR)/
     
-    cd $(STAGING_DIR_HOST)/bin && \
+    cd $(TMP_DIR) && \
     $(STAGING_DIR_HOST)/bin/mkimage -f yocto.its yocto.itb
     
-    cp $(STAGING_DIR_HOST)/bin/yocto.itb $@
+    cp $(TMP_DIR)/yocto.itb $@
+    
+    # Clean up temporary directory
+    rm -rf $(TMP_DIR)
 endef
 
 define Build/rtd-sdcard
   rm -f $@.boot
   mkfs.fat $@.boot -C $(FAT32_BLOCKS)
   mcopy -i $@.boot ${IMAGE_KERNEL} ::yocto.itb
-
   ./gen_rtd_sdcard_img.sh $@ \
     $@.boot \
     $(IMAGE_ROOTFS) \
@@ -43,5 +48,4 @@ define Device/Default
 endef
 
 include $(SUBTARGET).mk
-
 $(eval $(call BuildImage))
